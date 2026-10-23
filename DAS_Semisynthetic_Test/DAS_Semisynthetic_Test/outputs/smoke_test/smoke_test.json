@@ -1,0 +1,49 @@
+{
+  "status": "smoke_test_passed",
+  "device": "cpu",
+  "parameters": 26757,
+  "input_shape": [
+    1,
+    1,
+    128,
+    4096
+  ],
+  "output_shape": [
+    1,
+    1,
+    128,
+    4096
+  ],
+  "datasets": {
+    "train": {
+      "count": 240,
+      "shape": [
+        240,
+        128,
+        4096
+      ],
+      "dtype": "float16",
+      "first_sample_max_abs_x_minus_y": 2.989837646484375
+    },
+    "val": {
+      "count": 36,
+      "shape": [
+        36,
+        128,
+        4096
+      ],
+      "dtype": "float16",
+      "first_sample_max_abs_x_minus_y": 8.534957885742188
+    },
+    "test": {
+      "count": 36,
+      "shape": [
+        36,
+        128,
+        4096
+      ],
+      "dtype": "float16",
+      "first_sample_max_abs_x_minus_y": 2.1130170822143555
+    }
+  }
+}
