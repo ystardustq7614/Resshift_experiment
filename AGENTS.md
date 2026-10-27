@@ -34,6 +34,7 @@ Codex 在 HANDOFF 中给出改动目标、理由和回滚边界；Gemini 在 CHA
 | Gemini | 按当前 HANDOFF 修改产品代码及相关测试；执行验证；在 CHANGELOG 的 Gemini 区记录实际改动与效果 |
 | CHANGELOG.md | 按轮次追加：Codex 决策、Gemini 实施与效果、Codex 审阅结论；保留失败与未验证项 |
 | HANDOFF.md | Codex 维护的唯一当前任务单，包含目标、允许范围、验收与证据交付；历史结果归档到 CHANGELOG |
+| docs/milestones.md | Codex 维护的阶段概览，只记录事项、状态和一句话结果，不放实施细节 |
 
 Codex 默认不代替 Gemini 修改产品代码。发现实现问题时，给出具体文件、原因和验收要求，由 Gemini 返工；用户明确调整分工时再改变此约定。Codex 可以运行必要检查、维护决策和技术文档。不要冒用对方身份填报执行结果或审阅结论。
 
@@ -81,6 +82,8 @@ HANDOFF 的任务状态由 Codex 维护；Gemini 的即时执行状态以 CHANGE
 ## 文档维护
 
 同一轮在 CHANGELOG 使用同一个 ID；Codex 只维护决策与审阅区，Gemini 只维护实施与效果区。纠错用补充记录，不覆盖原有失败证据。技术参数继续在 [主题文档](docs/README.md) 单处维护，协作文件通过链接引用。
+
+[阶段里程碑](docs/milestones.md) 用于快速浏览，Codex 在审阅后简要更新。Gemini 的自测通过先记为待审阅，不能直接把里程碑改成已完成；原始数据、审计归档和模型验收分开标明。
 
 根目录三个 `RESSHIFT_*.md` 保持导航用途，历史审查报告不改写为新结果。Codex 验收后如需更新技术文档，只同步受影响主题和真实状态，不能把局部测试升级为端到端验收。
 

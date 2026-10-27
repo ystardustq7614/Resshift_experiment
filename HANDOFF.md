@@ -1,134 +1,103 @@
 # Codex → Gemini：当前任务
 
-维护者：Codex。更新日期：2026-10-27（Asia/Shanghai），任务修订 4（验收与分支同步完成）。本文件保留本轮任务及交付依据；历史决策、执行和审阅归档到 [CHANGELOG.md](CHANGELOG.md)。
+维护者：Codex。更新日期：2026-10-27（Asia/Shanghai）。当前轮次 R003，任务修订 4（修订 2 验收收口）；R001 已完成，历史证据在 [CHANGELOG.md](CHANGELOG.md)。
 
-## R001：Swin 掩码与非移位分支正确性
+## R003：扩散 loss 与训练返回接口
 
-- 状态：**已验收，已同步到 dev，目标分支复测通过**。Gemini 已交付，Codex 在 test/code 和 dev 各复跑 13 项测试全部通过，并完成额外独立检查；详见 CHANGELOG 的 R001 审阅记录。
-- 执行者：Gemini；审阅者：Codex 与用户。
-- Gemini 执行分支：`test/code`，对应用户所说的“code 分支”；仓库当前无单独 `code`，不另建分支。
-- 同步目标：`dev`；Codex 已完成本地快进同步与目标分支复测。当前同步状态：**已同步**，没有远程推送。
-- 首次制单时工作区在 `dev`，Gemini 在 `test/code` 修改；Codex 审阅并取得提交操作授权后，将两个代码／测试文件提交为 `1ddc516ad6132e9a7501098de4d465282398e633`，再快进 dev。当前工作区在 `dev`，两个分支均指向该修复提交；本轮已关闭，没有新的 Gemini 实施任务。
-- 制单时 `test/code` 与 `dev` 的 HEAD 均为 `5147608e9bedd762fcb77fa4f0a0627df3a2bb3d`。执行前重新核实两侧和真实工作区，HEAD 相同不代表未提交内容相同。
+- 状态：**已验收、已同步 dev，目标分支复测通过**。修复提交为 `781d4b8da2e291e00b150a5df33df4fda64167d2`；源／目标各复跑 24 项测试通过，五类错误反例均被拦截。
+- 执行分支：`test/code`；审阅通过后由 Codex 同步到 `dev`，并复测。
+- 制单时两分支 HEAD：`6734f8c544b72ec4b7c60818af29b80ce71d68cc`。
+- 产品代码基线：`gaussian_diffusion.py` 的 Git blob 为 `fe1a026708875dff3b52ad07598622b711549c58`。执行前重新核对；分支变化需核查，不能覆盖新改动。
+- 当前进度看 [阶段里程碑](docs/milestones.md)；实施规则看 [AGENTS.md](AGENTS.md)。
+- 依据：[已有问题 3](docs/code-fixes/diffusion-loss.md)、[loss 数学与接口契约](docs/loss.md)、[扩散配置](docs/diffusion.md)。
 
-## 本轮三件事与回滚方案
+## 修订 2 验收收口
 
-- **改了哪儿**：修复提交 `1ddc516ad6132e9a7501098de4d465282398e633` 只包含 `models/swin_transformer.py` 与 `tests/test_swin_attention.py`，具体路径均在 `261023_Leizheng_resshift/` 下；涉及掩码布局、分支选择及尺寸类型，不改变数据或网络规模。
-- **为什么改**：原实现存在跨时间／道轴边界掩码错位，以及尺寸匹配的非移位路径对 None 调用 `.to()` 的问题；真实旧源码复现和新实现的独立验证见 CHANGELOG 的 R001。
-- **出问题怎么回滚**：如果发现由该修复引入的回归，先核对后续依赖和干净工作区，在 `test/code` 使用 `git revert --no-edit 1ddc516ad6132e9a7501098de4d465282398e633` 撤销该修复及其测试，审阅反向提交后再同步 dev。随后以 `git diff --exit-code 5147608e9bedd762fcb77fa4f0a0627df3a2bb3d -- 261023_Leizheng_resshift/models/swin_transformer.py 261023_Leizheng_resshift/tests/test_swin_attention.py` 核对这两个路径恢复到修改前基线，并检查数据和输出未变。回滚会恢复原有注意力缺陷，不能据此继续宣称 R001 通过；本次只记录方案，不执行回滚。
+F1～F4、F1-G 和 G2 均已关闭。Codex 复跑 24 项测试全部通过，并在独立内存检查中确认：错误目标、遗漏除数、重复加权、错误梯度缩放，以及真实 Swin 更新中的 NaN 梯度，均被当前回归拦截；NaN 会在 optimizer.step 前触发失败。
 
-## 原任务范围与执行前基线
+源码保持本轮首版修复不变，SHA256 为 `D05048227FA3361D8ABF60E2498A5B632B145975456A698829838FD2887E03BE`；890 行测试 SHA256 为 `C65FB15238EC2AD73DD23EA83160F310E54EF6B8F32656E9CA8DE3A345A60A8B`。这是提交前审阅版本；后续按 Git 提交内容核对。
 
-下文保留 R001 的原始范围与验收依据，供提交／同步时核对，不要求 Gemini 重复实施。若代码或测试发生新的修改，应重新审阅和验证。
+Gemini 本轮无待返工项。Codex 已仅提交两个产品文件并快进同步 dev，目标分支 24 项测试通过（18.200s）；对应验收记录和里程碑单独保存。当前工作区在 dev，后续文档提交可使 HEAD 前移，R003 产品修复始终由 `781d4b8` 标识。本次没有派发新的实现任务。下文保留原始范围、验收与回滚依据；本轮只覆盖局部 loss 和测试专用小规模 Swin 更新。
 
-先读 [AGENTS.md](AGENTS.md)、本文件，以及 [CHANGELOG 的 R001](CHANGELOG.md#r001--2026-10-27--swin-掩码与非移位分支正确性)。当前阶段从 [已有代码问题索引](docs/code-fixes/README.md) 开始，R001 对应其“注意力正确性”（原问题 1、2）。设计依据为 [范围说明](docs/scope.md)、[注意力问题](docs/code-fixes/swin-attention.md) 和 [模型的矩形尺寸与验收](docs/model.md)。其他文档里的实施建议不扩大本轮范围。
+## 本轮必须回答的三件事
 
-当前项目任务是半合成 DAS 配对去噪，已有网络和扩散组件，完整适配仍待实施。真实源码位于 `261023_Leizheng_resshift/models/`。数据包中的 LightUNet baseline、历史 CPU 小张量检查均不能代替本轮真实模块测试。
+| 问题 | 本轮要求 |
+| --- | --- |
+| 改了哪儿 | 只修复 ResShift 的 `GaussianDiffusion.training_losses()`、必要导入和对应测试；保持真实三元组返回 |
+| 为什么改 | 当前调用依赖不存在的 `utils.loss.LpLoss`，且只返回／加权修改 mse，缺少独立 loss 字段；无法按已确定的普通 MSE 接通训练 |
+| 出问题怎么回滚 | 只撤销本轮扩散源码与新增测试，保留 R001 的 Swin 修复、协作文档、数据和输出；具体步骤见下文 |
 
-制单前已有 `.gitignore` 修改，以及未跟踪的三个 `RESSHIFT_*.md` 和 `docs/`。保留这些内容，不能将其计作 Gemini 成果。执行前记录：
+## 执行前检查与范围
+
+先读上述依据，记录分支、HEAD、状态及相关 diff；确认安全后切到现有 `test/code`，再修改代码。
 
 ```powershell
 git branch --show-current
-git rev-parse HEAD
 git rev-parse test/code
 git rev-parse dev
 git status --short --untracked-files=all
-git diff --stat
-git diff -- 261023_Leizheng_resshift/models/swin_transformer.py
+git diff -- 261023_Leizheng_resshift/models/gaussian_diffusion.py
 ```
 
-另记未跟踪文件的路径和必要内容／哈希，因为 `git diff` 不显示其内容。确认不覆盖已有改动后，可为本任务切换到现有 `test/code`，随后重新记录分支和工作区状态；如果无法安全切换、目标分支不存在或目标文件有无法区分归属的新改动，先记录给 Codex。不要 reset、stash 或用 checkout 还原文件来清理基线。
+制单前工作区干净。本次派单新增／修改的 AGENTS、CHANGELOG、HANDOFF、docs/README 和 milestones 属于 Codex 文档准备；若尚未提交，纳入执行前基线，不算 Gemini 成果，不覆盖或丢弃。
 
-## 要解决的问题
+首轮审阅后，Codex 还更新了问题索引、diffusion-loss 与 loss 主题的候选状态；同样属于已有文档改动。验收开始时执行分支为 test/code，修复未提交，暂存区为空。实现与这些文档分别保存，不清理或回滚其他 agent 的内容。
 
-1. `calculate_mask()` 对 `[1,1,H,W]` 使用 `img_mask[:, h, w, :]`，空间轴索引错误；应沿 NCHW 的 H/W 轴写区域。
-2. `window_partition()` 已返回 `[nW, Ws, Ws, C]`，掩码路径额外 `permute` 后的 token 顺序与真实特征展平不一致。两处必须一起修复。
-3. 非移位块注册的 `attn_mask=None` 不能调用 `.to()`；应先分 `shift_size==0`，固定传 `mask=None`。移位块再按真实尺寸选择缓存或动态掩码。
-4. 统一名义／实际分辨率比较类型，避免列表和元组数值相同却不相等，使缓存路径长期被绕过。沿本模块相关尺寸传递检查，但不在本轮接通 U-Net 的逐层真实尺寸。
+允许 Gemini 修改：
 
-保留普通窗口与移位窗口交替方式，保证动态尺寸不复用错误尺寸的掩码，device／dtype 满足真实注意力计算。
+- `261023_Leizheng_resshift/models/gaussian_diffusion.py`：必要的 `mean_flat` 相对导入、ResShift 的 loss 计算／字段、该函数 docstring。
+- `261023_Leizheng_resshift/tests/test_diffusion_losses.py`：新增标准库 unittest 回归与小规模集成测试。
+- `CHANGELOG.md`：仅 R003 的“Gemini：实施与效果”区。
 
-## 允许修改的文件
+不修改 UNet、Swin、respace、script_util、数据／审计、依赖环境或训练入口，不重写 DDPM，不引入辅助 loss 或伪造 `utils.loss`。不修改里程碑或验收目标，不自行同步 dev。范围外阻塞写清位置和建议，由 Codex 决定是否扩展。
 
-- `261023_Leizheng_resshift/models/swin_transformer.py`：只修改上述掩码布局、分支和必要的尺寸类型统一；保留公开调用方式及无关逻辑。
-- `261023_Leizheng_resshift/tests/test_swin_attention.py`：新增有针对性的回归测试，优先使用标准库 `unittest`，不额外引入测试依赖。
-- `CHANGELOG.md`：只填写 R001 的“Gemini：实施与效果”区，包括实际状态、失败记录及返工证据。
+## 实现要求
 
-不修改 `unet.py`、扩散／loss、训练入口、任务配置、数据／审计、依赖环境和 `.gitignore`。不重写 `window_partition()`／`window_reverse()`，不改变网络规模、窗口形状、层级、skip、检查点或随机性方案。技术文档状态由 Codex 审阅后同步；Gemini 不修改 AGENTS、HANDOFF 或 Codex 的记录区。
+1. 删除缺失的 LpLoss 导入、实例和调用，复用 `from .basic_ops import mean_flat`。
+2. 在作差、平方、归约前将预测和目标转 FP32；沿非 batch 维归约，保留逐样本 `[B]`。不提前平均 batch、不 squeeze、不 detach、不截断预测。
+3. `terms["mse"]` 保留未乘时间步权重的误差；`terms["loss"]` 单独构造。首版 `xstart + weighted_mse=False` 时二者均为 FP32 `[B]`、数值相同且保留梯度。加权模式只改变 loss，不原地覆盖 mse。
+4. 保留现有 target 选择及其他预测分支的系数，尤其 EPSILON_SCALE 的原有除数；不将它们变成新的实验决策。
+5. 保留 `(terms, z_t, pred_zstart)` 返回，修正文档注释，移除不存在的 `up_sample_lq` 参数说明。现有 SpacedDiffusion 转发无需改接口。
 
-范围外依赖阻塞时，写清错误、位置、最小建议；由 Codex 决定是否修订任务。不要为让测试通过而伪造依赖、复制被测实现或跳过必验用例。
+## 必验项目
 
-## 验收条件
+| 项目 | 通过条件 |
+| --- | --- |
+| 原问题与真实调用 | 不补造外部 loss，直接调用真实 GaussianDiffusion 路径；记录基线失败及修复后的结果，不能只测试另写的 MSE 函数 |
+| 数学、shape、梯度 | batch=1/2 均保持 `[B]`；零真值、两样本预测常数 1/2 时 mse 为 `[1,4]`、均值 2.5；四类目标分支分别比较实际与解析梯度 |
+| FP32 归约 | BF16 输出仍在 FP32 作差／平方／归约，含可区分“先用 BF16 平方再转 FP32”的数值用例；输出、loss 与梯度有限 |
+| 权重隔离与原有分支 | 覆盖不同 t 的加权模式，mse 不被乘权，loss 与逐样本 mse×权重一致；保留其他预测分支的目标／系数并做基本数值回归 |
+| 三元组与转发 | GaussianDiffusion 和真实 SpacedDiffusion 均返回三元组，字段、shape、梯度正确；用非连续 timestep_map 核对映射，模型每次调用只前向一次 |
+| 累积语义 | 用固定输入／t／noise 比较小模型的 batch 均值梯度与正确缩放的 micro-batch 累积梯度，排除重复平均 |
+| 真实 Swin 更新 | 真实 UNetModelSwin 小规模前后向及一次 step；逐项检查参与参数的梯度与步后参数值有限，并确认至少一个参数由非零 loss 梯度驱动变化 |
+| 回归与范围 | 既有 test_swin_attention.py 继续通过，git diff --check 通过；改动与交付记录只在允许范围 |
 
-以下 **A～E 全部属于本轮必验**；F 是条件性补充。它们验收局部注意力正确性，不验收完整 DAS 训练。
+解析用例可以使用有可训练参数的简单预测器，但必须进入真实扩散函数；不能以它代替真实 Swin 集成检查。
 
-### A. 独立参考与具体 token 语义
+Swin 集成可用测试专用的小网络和合成矩形输入，例如 `16×32`、`model_channels=swin_embed_dim=32`、两个层级。显式设置 `in_channels=out_channels=1`、`image_size=lq_size=16`、`cond_lq=True`、`cond_mask=False`、`use_fp16=False`，断言条件提取器为 Identity。这仅是测试夹具，不改变正式网络规模、裁窗或优化器方案。
 
-- 用独立坐标／边界逻辑生成参考掩码，逐元素核对真实模块的输出。参考不能调用生产 `calculate_mask()` 或复用其窗口展开来生成期望结果，也不能仅复制修复后的代码。
-- 核对 `H=16,W=32,window_size=8,shift_size=4`：窗口索引 3 中，token `(0,0)` 与 `(0,4)` 的掩码为 `-100`，阻断跨时间首尾；`(0,0)` 与 `(4,0)` 为 `0`，保留合法道间关联。
-- 补充跨道轴首尾、同时跨两轴、合法相邻与内部窗口的具体 token 对。仅 shape、屏蔽总数或不同元素数量相同，不能通过。
-- 至少展示一个语义用例在原实现失败、修复后通过的证据。可在临时目录验证原始源码；不得覆盖或回滚当前工作区，也不能把导入失败当成缺陷复现。
+在本机 CUDA／BF16 可用时，真实 Swin 更新须使用外部 BF16 autocast；不得用模型整体 half 代替。若环境不可用，记录 CPU 已验范围和 GPU 未验原因，不把本轮全部标为通过。小网络更新不代表完整 128×4096／官方规模、检查点、15 步采样或目标双卡已经验收。
 
-### B. 非移位／移位 × 缓存／动态路径
+真实集成复用现有扩散构造器并采用主题文档已确定的 15 步日程；纯数学／映射测试可以使用小型夹具，不把测试专用参数升级为正式训练配置。
 
-- 覆盖 shift=0/4，以及名义尺寸匹配／不匹配的四类组合；例如实际 `16×32`，名义分别取 `16×32` 和 `16×64`。
-- 非移位两条路径都传 `mask=None`，且不调用 `calculate_mask()` 生成无用掩码；可以用 hook 或调用计数观察，但实际前向仍执行真实注意力模块。
-- 移位块同一实际尺寸下，缓存和动态结果与独立参考一致；匹配时确实复用注册缓冲，不匹配时使用实际尺寸计算，不仅比较最终输出 shape。
-- 覆盖名义分辨率以列表／元组输入但数值相同的情况，确保不依赖二者意外不等来避开错误。
+## 验证命令与交付
 
-### C. 矩形窗口往返与掩码
-
-- `window_partition → window_reverse` 必须逐元素恢复原输入，覆盖 batch>1、channel>1 的小矩形。
-- 对完整输入对应的四层尺寸 `128×4096`、`64×2048`、`32×1024`、`16×512`，检查窗口往返与掩码语义。可用单通道小内存检查，不要求跑完整 U-Net 注意力前向。
-- 这轮不选定 OOM 裁窗尺寸；用于分支测试的尺寸不构成实验裁窗决策。
-
-### D. CPU 真实模块前向与反向
-
-- 小矩形上执行真实 `SwinTransformerBlock` 前向和反向，shift=0/4 均覆盖；通道数满足当前 normalization 的约束，例如 `dim=32`。
-- 输出与输入 shape 一致，输出、输入梯度及参与计算的参数梯度有限。固定局部测试随机种子，不能只用 mock 输出声称模块通过。
-- 没有真实依赖或任一必验失败时，本轮保持未通过，交付阻塞／失败证据。
-
-### E. 范围与交付检查
-
-- `git diff --check` 通过；新测试无空测试、强制成功、宽泛吞异常或整组跳过。
-- 实际修改在 `test/code` 完成且仅落在允许范围，既有修改保持；检查新增测试确实纳入执行，不能把“运行 0 个测试”的退出码 0 当成通过。
-- CHANGELOG 中填完整执行证据和限制，完成后将 Gemini 执行状态标为“待审阅”；不自行写 Codex 验收结论。
-
-### F. CUDA／BF16 AMP（环境具备时补测）
-
-如已核实本机 CUDA 和 BF16 支持，补充小模块前后向及掩码 device／dtype 检查，记录真实设备；未具备条件则明确“未执行＋原因”。本机测试不能代替目标双 RTX 4090、DDP、检查点一致性、显存或训练效果验收。
-
-## 验证命令与环境
-
-历史报告给出的解释器是 `E:\CondaData\envs_dirs\diafno-local\Scripts\python.exe`；这只是环境线索，执行前实际检查路径和依赖，不能照抄历史版本当本轮结果。
-
-从 `test/code` 的仓库工作目录运行环境检查：
+在仓库根目录、`test/code` 分支下运行；先核实解释器与依赖。新测试已存在，首轮通过不代表返工完成；修改后重新运行：
 
 ```powershell
 $dasPython = 'E:\CondaData\envs_dirs\diafno-local\Scripts\python.exe'
-Test-Path -LiteralPath $dasPython
-& $dasPython -c "import sys, torch, timm; print(sys.executable); print(sys.version); print('torch', torch.__version__); print('timm', timm.__version__); print('cuda_available', torch.cuda.is_available())"
-```
-
-下列测试已由 Gemini 实现并执行，Codex 也已独立复跑通过；同步到 dev 后仍须在目标分支复测：
-
-```powershell
-& $dasPython -m unittest discover -s '261023_Leizheng_resshift\tests' -p 'test_swin_attention.py' -v
+& $dasPython -B -m unittest discover -s '261023_Leizheng_resshift\tests' -p 'test_diffusion_losses.py' -v
+& $dasPython -B -m unittest discover -s '261023_Leizheng_resshift\tests' -p 'test_swin_attention.py' -v
 git diff --check
-git diff --stat
 git status --short --untracked-files=all
 ```
 
-测试需要导入真实 `models.swin_transformer`；在测试进程内处理数字开头的父目录路径，不修改全局 `PYTHONPATH` 或安装伪包。解释器不可用或依赖缺失时先报告，不擅自升级环境。
+在 CHANGELOG 的 R003 Gemini 区记录“改了哪儿／为什么改／出问题怎么回滚”，以及解释器／依赖／设备、完整命令、工作目录、退出码、测试数、关键输出和未验项。完成后写“待审阅”，不能填写 Codex 结论；未授权不 commit 或 push。
 
-## 返回给 Codex 的内容
+## 回滚与同步
 
-在 CHANGELOG 的 R001 Gemini 区写明实际文件及修改、执行前基线、`test/code` 分支确认、环境、每条命令与工作目录／退出码／关键输出、A～F 逐项结果、已知限制和证据位置。返回时注明“R001 待审阅”或具体阻塞。Codex 将读取真实 diff 并复核关键用例，再记录是否验收或退回修改。Gemini 不自行同步到 dev。
-
-## Codex 验收后同步到 dev
-
-完成记录：R001 实现审阅通过，并已获得本轮提交操作授权。仅两个已审阅代码／测试文件纳入修复提交 `1ddc516ad6132e9a7501098de4d465282398e633`，执行 `git switch dev`、`git merge --ff-only test/code` 后，在 dev 上重跑全部 13 项测试通过（16.703s，退出码 0）。其他既有修改和未跟踪文档保持，未纳入该提交。完整提交范围与证据在 CHANGELOG 的 R001。
-
-用户已授权在确认无问题后同步。Codex 按 AGENTS 的同步门槛，先确认 R001 必验全部通过、实际差异均已审阅，再只将本轮修复和相关测试、必要记录同步到 dev。核对目标分支已有改动，不能覆盖用户工作或夹带其他未验收内容；尚未提交的修复不能仅靠切换分支就视为同步完成。
-
-记录源／目标 HEAD、纳入的提交或精确文件差异、实际同步方式；在 dev 运行同一组注意力回归与差异检查，并将退出码和结果写入 CHANGELOG 的 Codex 审阅区。源内容变化需重新审阅，缺少必要提交授权或同步受阻时记录具体原因，不强行处理，也不提前标记“已同步”。远程推送不包含在本次本地同步授权内。
+- 触发条件：本轮导致数学／梯度／返回接口错误、Swin 回归，或其他可归因于该修复的故障。
+- 未提交时：先保存本轮源码差异与新增测试副本，确认归属后按本轮补丁撤销，只处理这两个产品文件，保护其他 agent 的文档与用户改动。
+- 已提交时：R003 修复提交为 `781d4b8da2e291e00b150a5df33df4fda64167d2`；在 test/code 检查后续依赖后用 `git revert --no-edit 781d4b8da2e291e00b150a5df33df4fda64167d2` 撤销，审阅后按约定同步 dev。不撤销 R001 或文档保存提交，不重置整条分支。
+- 回滚验证：在没有后续相关改动时，用 `git diff --exit-code 6734f8c544b72ec4b7c60818af29b80ce71d68cc -- 261023_Leizheng_resshift/models/gaussian_diffusion.py 261023_Leizheng_resshift/tests/test_diffusion_losses.py` 检查恢复基线；另用 `Test-Path -LiteralPath '261023_Leizheng_resshift/tests/test_diffusion_losses.py'` 确认本轮新增测试已移出正式目录，因为 git diff 不显示未跟踪文件。重跑既有 Swin 测试，确认数据／输出完整。原 loss 缺陷会随回滚恢复，里程碑状态也要退回，不能声称训练已接通。
+- Codex 独立审阅、修复保存、dev 同步和目标分支复测均已完成；里程碑已更新。没有执行回滚，也没有远程推送。

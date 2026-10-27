@@ -18,9 +18,9 @@ batch_loss = mean_i(MSE_i)
 
 输入为单通道，每个样本先在 `[C,H,W]` 三个非 batch 维上平均，保留 `[B]` 结果；训练侧再对 batch 求平均。预测和目标转 FP32 后进行作差、平方及归约，保留梯度连接。loss 与目标均使用现有数据尺度，不额外乘回扩散输入缩放系数，也不在 loss 前截断输出。
 
-本地 `training_losses()` 尚未满足上述普通 MSE 及返回字段要求，现有缺失依赖、归约和字段问题另见 [代码修改说明](code-fixes/diffusion-loss.md)。官方当前公开实现使用 `mean_flat((target-model_output)**2)` 保留逐样本误差，随后单独构造 `terms["loss"]`；对应会议版 YAML 明确配置 `weighted_mse: False`。当前已选择的普通 MSE 与该官方基准的 loss 设置一致，但 DAS 效果仍需实际训练验证。
+本地 `training_losses()` 已在 R003 完成修复并同步 dev，普通 MSE、字段隔离、逐分支解析梯度和小规模真实配置集成均通过验收；修复提交为 `781d4b8`，源／目标各 24 项回归通过。原缺陷及证据见 [代码修改说明](code-fixes/diffusion-loss.md)。官方当前公开实现使用 `mean_flat((target-model_output)**2)` 保留逐样本误差，随后单独构造 `terms["loss"]`；对应会议版 YAML 明确配置 `weighted_mse: False`。当前已选择的普通 MSE 与该官方基准的 loss 设置一致，但正式 DAS 训练效果仍需验证。
 
-本轮从本地源码原样提取 `get_named_eta_schedule()`，配合本地 START_X 权重公式做独立数值核算，没有运行训练或修改模型代码。对已确定的 15 步日程、`kappa=2`、`min_noise_level=0.04`、`etas_end=0.99`、`power=0.3`：
+此前方案核算从本地源码原样提取 `get_named_eta_schedule()`，配合本地 START_X 权重公式做独立数值检查，当时没有运行训练或修改源码；以下保留该阶段证据。对已确定的 15 步日程、`kappa=2`、`min_noise_level=0.04`、`etas_end=0.99`、`power=0.3`：
 
 | 时间步 t | 当前 WEIGHTED_MSE 系数 w_t |
 | --- | --- |
@@ -47,7 +47,7 @@ batch_loss = mean_i(MSE_i)
 
 第一版 `target=clean`，`terms["mse"]` 与 `terms["loss"]` 均为 FP32 `[B]`、数值相等并保留梯度；训练器解包 `(terms, z_t, pred_zstart)` 后使用 `terms["loss"].mean()`，再按累积次数缩放。不在扩散函数内提前平均 batch，不将 batch=1 squeeze 为标量，诊断与日志才 detach。
 
-落盘后验收须覆盖 batch=1/2 的 shape、FP32 归约、解析梯度、未加权 mse 与加权 loss 的字段隔离、三元组转发，以及真实 Swin 在 BF16 AMP 下的一次训练更新。原有 CPU 小张量检查只支持局部数学和接口结论，不替代 GPU AMP、DDP、显存或端到端训练验收。
+R003 已覆盖 batch=1/2 的 shape、FP32 归约、解析梯度、未加权 mse／加权 loss 隔离、三元组转发，以及测试专用小规模 Swin 的 BF16 AMP 一次更新。原有 CPU 内存检查只保留为历史局部证据；当前局部验收仍不替代正式网络规模、DDP、显存或端到端训练验收。
 
 ## 返回字段
 
