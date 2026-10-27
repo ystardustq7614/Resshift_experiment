@@ -13,7 +13,7 @@
 | 随机来源 | 控制方式 |
 | --- | --- |
 | 模型初始化 | 固定初始化种子，保证双卡初始模型一致；记录配置和初始化方式 |
-| 训练样本排列 | 若采用 [数据约定](data.md)的采样建议，各 rank 使用相同 sampler 基础种子和 epoch，先生成共同排列再分片；采用 DistributedSampler 时每轮在创建迭代器前调用 `set_epoch(epoch)` |
+| 训练样本排列 | 已确认采用[数据约定](data.md)的全局无放回排列再分片；各rank使用同sampler基础种子和epoch，DistributedSampler每轮在创建迭代器前调用set_epoch(epoch) |
 | 训练时间步及额外高斯噪声 | 模型初始化后为各 rank 使用区分的训练随机流，避免双卡锁步复用相同的时间步与噪声序列；每次访问继续抽样，不在每个 batch、micro-step 或每次访问样本时重置同一种子 |
 | DataLoader 与裁窗 | 明确初始化 Python、NumPy、PyTorch 及实际使用的独立 generator；若使用多个 worker，设置各 worker 的随机状态。将来启用随机裁窗时，其 RNG 与恢复位置也纳入管理 |
 | 验证与测试 | 基于评估基础种子、split 和稳定样本 ID 派生逐样本随机序列，覆盖初始噪声及全部反向步骤；不把 epoch、checkpoint 或 rank 写入评估样本种子，不按结果挑选种子 |

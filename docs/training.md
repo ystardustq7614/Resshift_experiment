@@ -12,9 +12,17 @@
 
 ## 入口与循环职责
 
-当前模型项目只有网络、扩散及相关组件，尚无 ResShift 训练器。建议在 `261023_Leizheng_resshift/` 内增加 `train_das.py` 和 `configs/das_swin.json`，用一个入口连接当前 Swin 训练；配对读取可放入同目录的 `das_dataset.py`。这些路径是讨论建议，文件尚未创建。JSON 配置可用标准库读取，避免为当前单配置实验引入通用训练框架。
+当前尚无ResShift训练入口。R007已选择在261023_Leizheng_resshift内新增train_das.py、configs/das_swin.json和das_dataset.py，以标准库JSON和一个循环连接Swin；文件尚未创建，不引入通用训练框架。当前任务见[HANDOFF](../HANDOFF.md)。
 
-建议入口提供 `--config`、`--data-dir`、`--output-dir`、`--resume` 和有限步数的 `--smoke-test` 等参数，命令行覆盖值也写入最终解析配置。通过 torchrun 一卡一个进程运行双卡，入口读取 rank/local_rank/world_size 并初始化通信；单卡调试仍使用同一入口。数据分片由 sampler 负责，DDP 不会自动划分样本。通信后端及具体 API 按目标双 4090 的操作系统和 PyTorch 实际版本验证，不根据本机可用 GPU 推断目标环境已通过。
+R007入口先提供--config/--data-dir/--output-dir/--device及必需的--smoke-test N（实际更新次数），单卡和torchrun共用真实循环；参数和有效运行配置写入独立新目录。当前不提供resume或无界正式训练，完整保存恢复和完整验证接通后再开放正式模式。通过torchrun读取rank/local_rank/world_size，sampler显式分片；通信后端须按实际环境核验，不因本机调试通过宣称目标双4090通过。
+
+## R007：当前实施与验证范围
+
+R007待实施：只读NPY配对/索引、用户已确认的全局排列分片、配置显式构建Swin/15步扩散、rank独立训练随机流、CPU FP32或单卡CUDA BF16、样本数加权累积/尾组、裁剪/AdamW/按实际更新推进的warmup+cosine，以及DDP no_sync和sum/count日志。每次更新末才允许smoke停止；不重写共享模型/扩散，不改已提交同步的R006成果。
+
+当前模型buffer只有固定几何attn_mask/relative_position_index；R007拟在核对跨rank模型配置/几何与buffer清单后，使用DDP(broadcast_buffers=False)，意外有状态buffer应拒绝并重新审查同步需求，不使用私有忽略API。本机Gloo可用标志为True、NCCL为False、GPU仅一张RTX5050，CPU两进程逻辑与单GPU BF16分别验收；目标双CUDA/NCCL仍未验收。
+
+smoke输出只含配置/环境/更新与结果证据，不写半份last.pt，不计算val/test指标。下表仍是完整训练的后续职责；R007不代表每epoch完整保存、恢复一致性、完整15步采样或效果评价已经实现。正式参数规模/尺寸资源也不随小数据夹具通过而升级。
 
 | 阶段 | 入口职责 |
 | --- | --- |
@@ -45,7 +53,7 @@ loss = terms["loss"].mean()
 
 `noise` 可由训练器显式生成以便管理独立随机流，也可由扩散函数按已控制的训练 RNG 生成，实施时统一选一种；同一次调用只生成一份实际使用的扩散噪声。若使用 DDP.no_sync 避免前三次 micro-step 的通信，作用域须同时覆盖前向和反向，第 4 次正常同步；只包 backward 不能达到预期。当前每卡 120 个 micro-step 可整除累积次数 4；将来改变采样量或裁窗计数时，应显式处理尾部不足一组的累积，不丢梯度或按错误除数更新。
 
-前向、loss 接口、小规模真实更新、检查点一致性、双卡显存及恢复验收仍按既有要求分阶段完成；本节没有新增训练、配置或数据适配代码，也未决定尚待讨论的优化器、学习率、训练预算和验证频率。
+小规模更新、DDP、目标资源与恢复仍分阶段验收；当前只有R007任务制单，没有新增训练产品。优化器/学习率/预算和完整遍历已由用户确认，验证频率及评价待定项不随之冻结。
 
 参考：[PyTorch torchrun](https://docs.pytorch.org/docs/2.14/elastic/run.html)、[DDP 与 no_sync](https://docs.pytorch.org/docs/2.14/generated/torch.nn.parallel.DistributedDataParallel.html)。
 
@@ -59,4 +67,4 @@ loss = terms["loss"].mean()
 
 ## 依赖与状态
 
-入口和配置文件路径仍为建议，尚未创建。数据排列在 [data.md](data.md)，随机状态在 [randomness.md](randomness.md)，保存阶段在 [checkpoints.md](checkpoints.md)。完整验证调度单独维护在 [evaluation.md](evaluation.md)。
+入口/配置路径已由R007任务选择，尚未创建。数据排列见[data.md](data.md)，已确认优化值见[optimization.md](optimization.md)，随机状态见[randomness.md](randomness.md)，完整保存恢复见[checkpoints.md](checkpoints.md)，完整验证调度见[evaluation.md](evaluation.md)。后两者仍属后续接入。
