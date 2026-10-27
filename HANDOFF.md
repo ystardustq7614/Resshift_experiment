@@ -4,7 +4,7 @@
 
 ## 状态、目标与本轮边界
 
-- **R007产品待Gemini实施、尚未验收；当前任务/决策文档已获保存同步授权**。R006已单独提交并同步dev复测通过，不表示R007已实现或Gemini已收到任务。
+- **R007产品尚未验收；本次同步收尾时检测到4个允许路径已出现未跟踪文件，完成情况待Gemini记录和独立审阅**。它们未纳入R006或任务文档提交。R006已单独提交并同步dev复测通过。
 - 本轮接通：只读NPY配对→JSON配置→Swin/15步扩散→FP32参数/BF16→梯度累积/裁剪/AdamW/学习率→单卡或DDP有限步更新→独立运行证据。所有更新必须经同一真实训练循环，不能只有测试里另写一套逻辑。
 - 当前仅开放显式有限步smoke入口，不开放正式长训练、resume、完整last或验证/test循环。完整保存恢复、固定完整采样与评价后续另轮；不能把smoke结果称为完整训练checkpoint或最终去噪效果。用户已确认本轮只做有限步链路验证，不启动正式长训练。
 - 已确认正式起点：采用 [optimization.md](docs/optimization.md) 的AdamW/学习率日程/300epoch/裁剪，以及 [data.md](docs/data.md) 的全局无放回完整遍历后按rank分片，无额外增强/随机裁窗。SSIM/验证频率/best等其他待定项没有随之冻结。
@@ -16,7 +16,7 @@
 - 冻结R006已提交内容：unet.py SHA256 `5D7E1A3F8042BD67953E951C5F78A59CB3CE95851DBB130294564005D95E788A`；swin_transformer.py `928AA1E17A724A8776172B7FBCCB869958CD1C7C7CB6ECA887E0DAB147545693`；tests/test_rectangular_input.py（1094行）检出后SHA256 `499D4BAEE58A1A680C1EEC6E3C5E1B76167AE4D12C332B9E1B0078563591ADDC`。路径相对261023_Leizheng_resshift。
 - Git规范化blob分别为 `cc3711a5b278c6189bfe6629581e1f27cd004312`、`c01af40f7134960ddfde09526d1898cea2e9fa57`、`c64df4134c981bfc9251577f75897da9c3547ee6`。新测试原LF审阅SHA256为DC4981A399B04A149CEA63304DEEE79B5AC86203885B0A4BE166DB17C02D9A4D，Git按既有设置检出CRLF后raw hash变化，规范化blob完全一致，不是内容返工。
 - 原有15份文档在产品提交/切换前后逐项哈希一致，未混入R006三个产品文件提交；之后Codex仅更新同步收口，作为独立文档提交。开始前仍要核对当前脏文件/未跟踪项，不能假定工作区永远干净或覆盖新工作。
-- AGENTS SHA256为 `E7AEF5BBA4BD04E5B7CBF5F4430C5934156559EE3ADA5FD5C69E847E3A031AF3`。开始前重新查分支/HEAD、全部修改及未跟踪项并核验哈希，若R006已有后续变化先确认内容归属。
+- AGENTS规范化Git blob为 `3a16d4851094e9084fc4ea72f4bc108acf8e5ab9`，LF内容SHA256为 `E7AEF5BBA4BD04E5B7CBF5F4430C5934156559EE3ADA5FD5C69E847E3A031AF3`；当前CRLF检出raw SHA256为 `2EB6BCD572B90C0C9E54628D912879AB9718805B034F020FBAF470C4FAADD860`，内容一致。开始前重新查分支/HEAD、全部修改及未跟踪项并核验规范化内容，若R006已有后续变化先确认内容归属，不把单纯行尾转换当实现差异。
 - R006最终任务与历史未同步状态已归档CHANGELOG，最新提交/同步结果以随后补充记录为准。原HANDOFF修订4的SHA256为 `FE2B376123F7FE60AA4ADD1AD9E563F62C50A3DAC2894B8E841BAB9191CD7214`，该最终任务单当时未提交，不把a60e625中的旧任务单当R006归档。
 
 ## 改之前是什么样
