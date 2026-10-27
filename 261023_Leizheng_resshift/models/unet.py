@@ -6,6 +6,7 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.utils.checkpoint as checkpoint
 
 from .fp16_util import convert_module_to_f16, convert_module_to_f32
 from .basic_ops import (
@@ -132,6 +133,7 @@ class ResBlock(TimestepBlock):
         dims=2,
         up=False,
         down=False,
+        use_checkpoint=False,
     ):
         super().__init__()
         self.channels = channels
@@ -140,6 +142,7 @@ class ResBlock(TimestepBlock):
         self.out_channels = out_channels or channels
         self.use_conv = use_conv
         self.use_scale_shift_norm = use_scale_shift_norm
+        self.use_checkpoint = use_checkpoint
 
         self.in_layers = nn.Sequential(
             normalization(channels),
@@ -184,6 +187,14 @@ class ResBlock(TimestepBlock):
             self.skip_connection = conv_nd(dims, channels, self.out_channels, 1)
 
     def forward(self, x, emb):
+        if self.use_checkpoint and self.training and th.is_grad_enabled():
+            return checkpoint.checkpoint(
+                self._forward, x, emb,
+                use_reentrant=False, preserve_rng_state=True,
+            )
+        return self._forward(x, emb)
+
+    def _forward(self, x, emb):
         if self.updown:
             in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
             h = in_rest(x)
@@ -654,6 +665,8 @@ class UNetModelSwin(nn.Module):
         cond_lq=True,
         cond_mask=False,
         lq_size=256,
+        use_res_checkpoint=False,
+        use_swin_checkpoint=False,
     ):
         super().__init__()
 
@@ -678,6 +691,8 @@ class UNetModelSwin(nn.Module):
         self.num_head_channels = num_head_channels
         self.cond_lq = cond_lq
         self.cond_mask = cond_mask
+        self.use_res_checkpoint = use_res_checkpoint
+        self.use_swin_checkpoint = use_swin_checkpoint
 
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
@@ -719,6 +734,7 @@ class UNetModelSwin(nn.Module):
                         out_channels=int(mult * model_channels),
                         dims=dims,
                         use_scale_shift_norm=use_scale_shift_norm,
+                        use_checkpoint=use_res_checkpoint,
                     )
                 ]
                 ch = int(mult * model_channels)
@@ -738,7 +754,7 @@ class UNetModelSwin(nn.Module):
                                 drop=dropout,
                                 attn_drop=0.,
                                 drop_path=0.,
-                                use_checkpoint=False,
+                                use_checkpoint=use_swin_checkpoint,
                                 norm_layer=normalization,
                                 patch_norm=patch_norm,
                                  )
@@ -757,6 +773,7 @@ class UNetModelSwin(nn.Module):
                             dims=dims,
                             use_scale_shift_norm=use_scale_shift_norm,
                             down=True,
+                            use_checkpoint=use_res_checkpoint,
                         )
                         if resblock_updown
                         else Downsample(
@@ -775,6 +792,7 @@ class UNetModelSwin(nn.Module):
                 dropout,
                 dims=dims,
                 use_scale_shift_norm=use_scale_shift_norm,
+                use_checkpoint=use_res_checkpoint,
             ),
             BasicLayer(
                     in_chans=ch,
@@ -790,7 +808,7 @@ class UNetModelSwin(nn.Module):
                     drop=dropout,
                     attn_drop=0.,
                     drop_path=0.,
-                    use_checkpoint=False,
+                    use_checkpoint=use_swin_checkpoint,
                     norm_layer=normalization,
                     patch_norm=patch_norm,
                      ),
@@ -800,6 +818,7 @@ class UNetModelSwin(nn.Module):
                 dropout,
                 dims=dims,
                 use_scale_shift_norm=use_scale_shift_norm,
+                use_checkpoint=use_res_checkpoint,
             ),
         )
 
@@ -815,6 +834,7 @@ class UNetModelSwin(nn.Module):
                         out_channels=int(model_channels * mult),
                         dims=dims,
                         use_scale_shift_norm=use_scale_shift_norm,
+                        use_checkpoint=use_res_checkpoint,
                     )
                 ]
                 ch = int(model_channels * mult)
@@ -834,7 +854,7 @@ class UNetModelSwin(nn.Module):
                                 drop=dropout,
                                 attn_drop=0.,
                                 drop_path=0.,
-                                use_checkpoint=False,
+                                use_checkpoint=use_swin_checkpoint,
                                 norm_layer=normalization,
                                 patch_norm=patch_norm,
                                  )
@@ -850,6 +870,7 @@ class UNetModelSwin(nn.Module):
                             dims=dims,
                             use_scale_shift_norm=use_scale_shift_norm,
                             up=True,
+                            use_checkpoint=use_res_checkpoint,
                         )
                         if resblock_updown
                         else Upsample(ch, conv_resample, dims=dims, out_channels=out_ch)

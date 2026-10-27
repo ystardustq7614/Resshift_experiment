@@ -440,8 +440,10 @@ class BasicLayer(nn.Module):
         '''
         x = self.patch_embed(x) # B x embed_dim x Ph x Pw
         for blk in self.blocks:
-            if self.use_checkpoint:
-                x = checkpoint.checkpoint(blk, x)
+            if self.use_checkpoint and self.training and torch.is_grad_enabled():
+                x = checkpoint.checkpoint(
+                    blk, x, use_reentrant=False, preserve_rng_state=True
+                )
             else:
                 x = blk(x)
         x = self.patch_unembed(x) # B x C x Ph x Pw
