@@ -6,6 +6,8 @@ import numpy as np
 import torch as th
 import torch.nn.functional as F
 
+from .basic_ops import mean_flat
+
 def get_named_beta_schedule(schedule_name, num_diffusion_timesteps, beta_start, beta_end):
     """
     Get a pre-defined beta schedule for the given name.
@@ -534,16 +536,17 @@ class GaussianDiffusion:
         Compute training losses for a single timestep.
 
         :param model: the model to evaluate loss on.
-        :param first_stage_model: autoencoder model
         :param x_start: the [N x C x ...] tensor of inputs.
         :param y: the [N x C x ...] tensor of degraded inputs.
         :param t: a batch of timestep indices.
+        :param first_stage_model: autoencoder model (optional).
         :param model_kwargs: if not None, a dict of extra keyword arguments to
             pass to the model. This can be used for conditioning.
         :param noise: if specified, the specific Gaussian noise to try to remove.
-        :param up_sample_lq: Upsampling low-quality image before encoding
-        :return: a dict with the key "loss" containing a tensor of shape [N].
-                 Some mean or variance settings may also have other keys.
+        :return: a tuple of (terms, z_t, pred_zstart):
+                 - terms: dict containing "mse" and "loss", each an FP32 tensor of shape [N].
+                 - z_t: the noisy latent/state tensor at timestep t, shape [N x C x ...].
+                 - pred_zstart: the predicted clean state x_0 at timestep t, shape [N x C x ...].
         """
         if model_kwargs is None:
             model_kwargs = {}
@@ -559,8 +562,6 @@ class GaussianDiffusion:
         terms = {}
 
         if self.loss_type == LossType.MSE or self.loss_type == LossType.WEIGHTED_MSE:
-            from utils.loss import LpLoss
-            loss_fun = LpLoss()
             model_output = model(self._scale_input(z_t, t), t, **model_kwargs)
             target = {
                 ModelMeanType.START_X: z_start,
@@ -569,14 +570,15 @@ class GaussianDiffusion:
                 ModelMeanType.EPSILON_SCALE: noise*self.kappa*_extract_into_tensor(self.sqrt_etas, t, noise.shape),
             }[self.model_mean_type]
             assert model_output.shape == target.shape == z_start.shape
-            terms["mse"] = loss_fun(model_output, target)
+            mse = mean_flat((model_output.float() - target.float()).square())
             if self.model_mean_type == ModelMeanType.EPSILON_SCALE:
-                terms["mse"] /= (self.kappa**2 * _extract_into_tensor(self.etas, t, t.shape))
+                mse = mse / (self.kappa**2 * _extract_into_tensor(self.etas, t, t.shape))
             if self.loss_type == LossType.WEIGHTED_MSE:
                 weights = _extract_into_tensor(self.weight_loss_mse, t, t.shape)
             else:
                 weights = 1
-            terms["mse"] *= weights
+            terms["mse"] = mse
+            terms["loss"] = mse * weights
         else:
             raise NotImplementedError(self.loss_type)
 
