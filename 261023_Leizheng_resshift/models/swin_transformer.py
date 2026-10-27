@@ -209,7 +209,7 @@ class SwinTransformerBlock(nn.Module):
         else:
             attn_mask = None
 
-        self.register_buffer("attn_mask", attn_mask)
+        self.register_buffer("attn_mask", attn_mask, persistent=False)
 
     def calculate_mask(self, x_size):
         # calculate attention mask for SW-MSA
@@ -285,6 +285,29 @@ class SwinTransformerBlock(nn.Module):
         x = x + self.drop_path(self.mlp(self.norm2(x)))
 
         return x
+
+    def _load_from_state_dict(
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
+    ):
+        super()._load_from_state_dict(
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
+        )
+        mask_key = prefix + "attn_mask"
+        if mask_key in unexpected_keys:
+            unexpected_keys.remove(mask_key)
 
     def extra_repr(self) -> str:
         return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " \

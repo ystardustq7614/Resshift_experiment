@@ -667,6 +667,7 @@ class UNetModelSwin(nn.Module):
         lq_size=256,
         use_res_checkpoint=False,
         use_swin_checkpoint=False,
+        input_size=None,
     ):
         super().__init__()
 
@@ -693,6 +694,38 @@ class UNetModelSwin(nn.Module):
         self.cond_mask = cond_mask
         self.use_res_checkpoint = use_res_checkpoint
         self.use_swin_checkpoint = use_swin_checkpoint
+        self.lq_size = lq_size
+        self.window_size = window_size
+        if input_size is not None:
+            if not isinstance(input_size, (tuple, list)):
+                raise ValueError(
+                    f"input_size must be a tuple or list of 2 integers, got {type(input_size).__name__}: {input_size}"
+                )
+            if len(input_size) != 2:
+                raise ValueError(
+                    f"input_size must have length 2 (H, W), got length {len(input_size)}: {input_size}"
+                )
+            for idx, val in enumerate(input_size):
+                if isinstance(val, bool) or not isinstance(val, int):
+                    raise ValueError(
+                        f"input_size elements must be integers, element at index {idx} is {type(val).__name__}: {val}"
+                    )
+                if val <= 0:
+                    raise ValueError(
+                        f"input_size elements must be positive integers, element at index {idx} is {val}"
+                    )
+            if dims != 2:
+                raise ValueError(f"input_size is only supported for dims=2, got dims={dims}")
+            max_downsample = 2 ** (len(channel_mult) - 1)
+            required_multiple = window_size * max_downsample
+            if input_size[0] % required_multiple != 0 or input_size[1] % required_multiple != 0:
+                raise ValueError(
+                    f"input_size {input_size} spatial dimensions must be divisible by {required_multiple} "
+                    f"(window_size={window_size} * 2**(len(channel_mult)-1)={max_downsample})"
+                )
+            self.input_size = (int(input_size[0]), int(input_size[1]))
+        else:
+            self.input_size = None
 
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
@@ -739,6 +772,11 @@ class UNetModelSwin(nn.Module):
                 ]
                 ch = int(mult * model_channels)
                 if ds in attention_resolutions and jj==0:
+                    stage_hw = (
+                        (self.input_size[0] // (2 ** level), self.input_size[1] // (2 ** level))
+                        if self.input_size is not None
+                        else ds
+                    )
                     layers.append(
                         BasicLayer(
                                 in_chans=ch,
@@ -746,7 +784,7 @@ class UNetModelSwin(nn.Module):
                                 num_heads=num_heads if num_head_channels == -1 else swin_embed_dim // num_head_channels,
                                 window_size=window_size,
                                 depth=swin_depth,
-                                img_size=ds,
+                                img_size=stage_hw,
                                 patch_size=1,
                                 mlp_ratio=mlp_ratio,
                                 qkv_bias=True,
@@ -785,6 +823,12 @@ class UNetModelSwin(nn.Module):
                 input_block_chans.append(ch)
                 ds //= 2
 
+        mid_level = len(channel_mult) - 1
+        mid_stage_hw = (
+            (self.input_size[0] // (2 ** mid_level), self.input_size[1] // (2 ** mid_level))
+            if self.input_size is not None
+            else ds
+        )
         self.middle_block = TimestepEmbedSequential(
             ResBlock(
                 ch,
@@ -800,7 +844,7 @@ class UNetModelSwin(nn.Module):
                     num_heads=num_heads if num_head_channels == -1 else swin_embed_dim // num_head_channels,
                     window_size=window_size,
                     depth=swin_depth,
-                    img_size=ds,
+                    img_size=mid_stage_hw,
                     patch_size=1,
                     mlp_ratio=mlp_ratio,
                     qkv_bias=True,
@@ -839,6 +883,11 @@ class UNetModelSwin(nn.Module):
                 ]
                 ch = int(model_channels * mult)
                 if ds in attention_resolutions and i==0:
+                    out_stage_hw = (
+                        (self.input_size[0] // (2 ** level), self.input_size[1] // (2 ** level))
+                        if self.input_size is not None
+                        else ds
+                    )
                     layers.append(
                         BasicLayer(
                                 in_chans=ch,
@@ -846,7 +895,7 @@ class UNetModelSwin(nn.Module):
                                 num_heads=num_heads if num_head_channels == -1 else swin_embed_dim // num_head_channels,
                                 window_size=window_size,
                                 depth=swin_depth,
-                                img_size=ds,
+                                img_size=out_stage_hw,
                                 patch_size=1,
                                 mlp_ratio=mlp_ratio,
                                 qkv_bias=True,
@@ -892,6 +941,48 @@ class UNetModelSwin(nn.Module):
         :param lq: an [N x C x ...] Tensor of low quality iamge.
         :return: an [N x C x ...] Tensor of outputs.
         """
+        if self.input_size is not None:
+            if x.ndim != 4:
+                raise ValueError(f"Expected 4D input tensor (N, C, H, W), got shape {tuple(x.shape)}")
+            if x.shape[1] != self.in_channels:
+                raise ValueError(f"Expected input channels {self.in_channels}, got {x.shape[1]}")
+            max_downsample = 2 ** (len(self.channel_mult) - 1)
+            required_multiple = self.window_size * max_downsample
+            if (
+                x.shape[2] <= 0
+                or x.shape[3] <= 0
+                or x.shape[2] % required_multiple != 0
+                or x.shape[3] % required_multiple != 0
+            ):
+                raise ValueError(
+                    f"Input spatial dimensions {tuple(x.shape[2:])} must be positive and divisible by {required_multiple} "
+                    f"(window_size={self.window_size} * 2**(len(channel_mult)-1)={max_downsample})"
+                )
+            if self.cond_lq:
+                if lq is None:
+                    raise ValueError("Condition tensor lq is required when cond_lq=True")
+                if lq.ndim != 4:
+                    raise ValueError(f"Expected 4D condition tensor lq (N, C, H, W), got shape {tuple(lq.shape)}")
+                if lq.shape[0] != x.shape[0]:
+                    raise ValueError(f"Batch size mismatch: x has batch {x.shape[0]}, lq has batch {lq.shape[0]}")
+                if lq.shape[1] != self.in_channels:
+                    raise ValueError(f"Expected condition lq channels {self.in_channels}, got {lq.shape[1]}")
+                if lq.shape[2] <= 0 or lq.shape[3] <= 0:
+                    raise ValueError(f"Condition lq spatial dimensions {tuple(lq.shape[2:])} must be positive")
+                if self.lq_size == self.image_size and lq.shape[2:] != x.shape[2:]:
+                    raise ValueError(
+                        f"Condition lq spatial size {tuple(lq.shape[2:])} does not match input x spatial size {tuple(x.shape[2:])}"
+                    )
+            if self.cond_mask:
+                if mask is None:
+                    raise ValueError("Condition mask is required when cond_mask=True")
+                if mask.ndim != 4:
+                    raise ValueError(f"Expected 4D mask tensor (N, 1, H, W), got shape {tuple(mask.shape)}")
+                if mask.shape[0] != x.shape[0] or mask.shape[1] != 1 or (lq is not None and mask.shape[2:] != lq.shape[2:]):
+                    raise ValueError(f"Invalid condition mask shape {tuple(mask.shape)}")
+            elif mask is not None:
+                raise ValueError("Condition mask provided but cond_mask=False")
+
         hs = []
         emb = self.time_embed(timestep_embedding(timesteps, self.model_channels)).type(self.dtype)
 
@@ -901,6 +992,11 @@ class UNetModelSwin(nn.Module):
                 assert self.cond_mask
                 lq = th.cat([lq, mask], dim=1)
             lq = self.feature_extractor(lq.type(self.dtype))
+            if self.input_size is not None and lq.shape[2:] != x.shape[2:]:
+                raise ValueError(
+                    f"Extracted condition feature spatial size {tuple(lq.shape[2:])} "
+                    f"does not match input x spatial size {tuple(x.shape[2:])}"
+                )
             x = th.cat([x, lq], dim=1)
 
         h = x.type(self.dtype)
@@ -908,8 +1004,14 @@ class UNetModelSwin(nn.Module):
             h = module(h, emb)
             hs.append(h)
         h = self.middle_block(h, emb)
-        for module in self.output_blocks:
-            h = th.cat([h, hs.pop()], dim=1)
+        for block_idx, module in enumerate(self.output_blocks):
+            pop_h = hs.pop()
+            if h.shape[2:] != pop_h.shape[2:]:
+                raise ValueError(
+                    f"Spatial size mismatch at output block {block_idx}: "
+                    f"trunk feature shape {tuple(h.shape[2:])} vs skip feature shape {tuple(pop_h.shape[2:])}"
+                )
+            h = th.cat([h, pop_h], dim=1)
             h = module(h, emb)
         h = h.type(x.dtype)
         out = self.out(h)
