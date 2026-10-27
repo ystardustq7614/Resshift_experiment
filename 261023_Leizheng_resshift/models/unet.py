@@ -691,7 +691,7 @@ class UNetModelSwin(nn.Module):
             base_chn = in_channels + 1 if cond_mask else in_channels
         else:
             feature_extractor = []
-            base_chn = in_channels + 1 if cond_mask else in_channels
+            feature_chn = in_channels + 1 if cond_mask else in_channels
             base_chn = 16
             for ii in range(int(math.log(lq_size / image_size) / math.log(2))):
                 feature_extractor.append(nn.Conv2d(feature_chn, base_chn, 3, 1, 1))
