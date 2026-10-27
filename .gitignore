@@ -24,3 +24,15 @@ __pycache__/
 .ipynb_checkpoints/
 *.swp
 *.swo
+
+# Experiment outputs
+outputs/baseline/
+outputs/experiment_*/
+
+# Local dataset audit and smoke-test artifacts
+/DAS_Semisynthetic_Test/DAS_Semisynthetic_Test/DATASET_AUDIT_TASK.md
+/DAS_Semisynthetic_Test/DAS_Semisynthetic_Test/scripts/audit_dataset.py
+/DAS_Semisynthetic_Test/DAS_Semisynthetic_Test/tests/test_audit_dataset.py
+/DAS_Semisynthetic_Test/DAS_Semisynthetic_Test/outputs/baseline/
+/DAS_Semisynthetic_Test/DAS_Semisynthetic_Test/outputs/dataset_audit/
+/DAS_Semisynthetic_Test/DAS_Semisynthetic_Test/outputs/dataset_audit_revised/
