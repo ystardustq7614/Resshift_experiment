@@ -183,7 +183,7 @@ class SwinTransformerBlock(nn.Module):
                  act_layer=nn.GELU, norm_layer=normalization):
         super().__init__()
         self.dim = dim
-        self.input_resolution = input_resolution
+        self.input_resolution = tuple(input_resolution)
         self.num_heads = num_heads
         self.window_size = window_size
         self.shift_size = shift_size
@@ -214,7 +214,7 @@ class SwinTransformerBlock(nn.Module):
     def calculate_mask(self, x_size):
         # calculate attention mask for SW-MSA
         H, W = x_size
-        img_mask = torch.zeros((1, 1, H, W))  # 1 H W 1
+        img_mask = torch.zeros((1, 1, H, W))  # 1 1 H W
         h_slices = (slice(0, -self.window_size),
                     slice(-self.window_size, -self.shift_size),
                     slice(-self.shift_size, None))
@@ -224,11 +224,11 @@ class SwinTransformerBlock(nn.Module):
         cnt = 0
         for h in h_slices:
             for w in w_slices:
-                img_mask[:, h, w, :] = cnt
+                img_mask[:, :, h, w] = cnt
                 cnt += 1
 
-        mask_windows = window_partition(img_mask, self.window_size).permute(0,2,3,1).contiguous()  # nW, window_size, window_size, 1
-        mask_windows = mask_windows.view(-1, self.window_size * self.window_size) # nW, window_size*window_size
+        mask_windows = window_partition(img_mask, self.window_size)
+        mask_windows = mask_windows.view(-1, self.window_size * self.window_size)  # nW, window_size*window_size
 
         attn_mask = mask_windows.unsqueeze(1) - mask_windows.unsqueeze(2)
         attn_mask = attn_mask.masked_fill(attn_mask != 0, float(-100.0)).masked_fill(attn_mask == 0, float(0.0))
@@ -258,11 +258,17 @@ class SwinTransformerBlock(nn.Module):
         x_windows = window_partition(shifted_x, self.window_size)  # (NW*B) x Ws x Ws x C
         x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # (NW*B) x (Ws*Ws) x C
 
-        # W-MSA/SW-MSA (to be compatible for testing on images whose shapes are the multiple of window size
-        if self.input_resolution == x_size:
-            attn_windows = self.attn(x_windows, mask=self.attn_mask.to(x.dtype))  # (NW*B) x (Ws*Ws) x C
+        # W-MSA/SW-MSA (to be compatible for testing on images whose shapes are the multiple of window size)
+        actual_hw = (Ph, Pw)
+        nominal_hw = tuple(self.input_resolution)
+        if self.shift_size == 0:
+            mask = None
+        elif actual_hw == nominal_hw:
+            mask = self.attn_mask.to(device=x.device, dtype=x.dtype)
         else:
-            attn_windows = self.attn(x_windows, mask=self.calculate_mask(x_size).to(x.device, x.dtype))
+            mask = self.calculate_mask(actual_hw).to(device=x.device, dtype=x.dtype)
+
+        attn_windows = self.attn(x_windows, mask=mask)  # (NW*B) x (Ws*Ws) x C
 
         # merge windows
         attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
@@ -470,7 +476,7 @@ class PatchEmbed(nn.Module):
         super().__init__()
         img_size = to_2tuple(img_size)
         patch_size = to_2tuple(patch_size)
-        patches_resolution = [img_size[0] // patch_size[0], img_size[1] // patch_size[1]]
+        patches_resolution = (img_size[0] // patch_size[0], img_size[1] // patch_size[1])
         self.img_size = img_size
         self.patch_size = patch_size
         self.patches_resolution = patches_resolution
