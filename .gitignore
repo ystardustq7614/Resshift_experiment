@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.vscode/
+.idea/
+data/
+dataset/
+runs/
+outputs/
+*.npy
+*.npz
+*.pt
+*.pth
+*.ckpt
