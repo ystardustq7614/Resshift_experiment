@@ -1,6 +1,6 @@
 # 随机性控制与可复现边界
 
-更新日期：2026-10-27。状态沿用拆分前方案；文档整理不表示代码实现或训练验收完成。
+更新日期：2026-10-28。R008当前epoch恢复范围已验收，产品b0e835a已同步dev并通过两个关键复测；固定完整评估随机流另轮推进。
 
 [返回文档索引](README.md)
 
@@ -26,6 +26,12 @@
 
 首版已确定在完整 epoch 结束、梯度累积和优化器更新完成后保存，恢复时从下一 epoch 开始；epoch 中途精确恢复不属于首版要求。若后续扩展该能力，还需正确恢复样本消费位置和相关数据加载状态，不能仅根据 epoch 或初始 seed 声称精确续跑。具体恢复保证由实施后的连续运行/中断恢复对照检查确定。使用梯度检查点时，重算应保持与原前向一致的随机行为，不能因为重算而重新抽取外部扩散时间步和噪声。
 
-单个固定种子的结果用于首版链路与效果验证，不作为不同训练种子下稳定性的证据；多种子实验留待后续需要时开展。本节记录已确定的设计方案，尚未修改训练或采样代码，恢复训练及重复评估的一致性仍待实施后验证。
+单个固定种子的结果用于首版链路与效果验证，不作为不同训练种子下稳定性的证据；多种子实验留待后续需要时开展。R007已有训练侧seed、sampler.set_epoch及rank独立generator；恢复训练和固定完整评估的一致性仍未验收，不能把已有seed设置称为完整可恢复。
+
+## R008本轮边界：先恢复实际训练随机流
+
+当前任务见[HANDOFF](../HANDOFF.md)，决策与后续证据见[R008](changelog/R008.md)。本轮只处理同环境/配置/world_size、num_workers=0的完整epoch边界恢复；保存各rank的Python、NumPy、Torch CPU/实际CUDA及独立训练generator状态。若DataLoader使用独立generator也保存其状态；若沿用默认Torch流，则用CPU RNG覆盖迭代器创建的消耗，不为未使用的worker/裁窗新增状态管理框架。
+
+恢复顺序为重建模型/优化器/loader/训练generator、加载训练状态、恢复对应rank的全部实际RNG、再创建下一epoch iterator；恢复后不得重新seed。验证采用自然训练抽样和非零dropout的小夹具，比对连续/中断恢复的下一轮索引、t/noise、参数/AdamW及随机状态。固定完整15步评估及逐样本ID种子仍是后续采样阶段职责，不作为本轮前置，也不预先新增评估随机性API。
 
 参考：[PyTorch Reproducibility](https://docs.pytorch.org/docs/2.14/notes/randomness.html)、[DistributedSampler](https://docs.pytorch.org/docs/2.14/data.html#torch.utils.data.distributed.DistributedSampler)。具体 API 接入仍需核对目标训练环境的实际版本。

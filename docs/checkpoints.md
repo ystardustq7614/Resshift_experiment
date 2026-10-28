@@ -1,6 +1,6 @@
 # Checkpoint 保存、加载与恢复
 
-更新日期：2026-10-27。状态沿用拆分前方案；文档整理不表示代码实现或训练验收完成。
+更新日期：2026-10-28。R008当前epoch保存/恢复范围已验收，产品b0e835a已同步dev并通过两个关键复测；不代表完整采样或双卡恢复已验。
 
 [返回文档索引](README.md)
 
@@ -32,3 +32,17 @@
 实施验收采用小规模连续训练与中断恢复对照，检查下一轮数据索引、训练 t/epsilon、global_step、学习率及更新后的模型/优化器状态，并检查同一 checkpoint 的固定链评估输出。不要求在完整正式训练上反复中断。训练与推理加载均由同一配置重建模型，推理只需读取对应权重和配置。
 
 本节记录已确定的每轮完整保存、下一轮恢复及首版不用 EMA 方案，尚未修改训练代码；best 规则继续搁置，额外历史快照安排待定。参考：[PyTorch 保存与恢复训练 checkpoint](https://docs.pytorch.org/tutorials/beginner/saving_loading_models.html#saving-loading-a-general-checkpoint-for-inference-and-or-resuming-training)。
+
+## R008接入范围与具体约定（当前实现范围已验收）
+
+本轮任务与证据见[HANDOFF](../HANDOFF.md)/[R008](changelog/R008.md)，仅支持相同环境/训练配置/world_size、num_workers=0。完整15步固定评估输出的恢复对照在采样阶段完成；本轮不把尚未接入的评估系统列为恢复门槛，也不支持跨卡数、跨精度或任意micro-step续跑。
+
+- CLI新增显式 `--resume <output-dir>/checkpoints/last.pt`，只允许加载本次运行自行生成且可信的完整last；新实验仍要求新output目录。恢复核对其运行目录、配置/数据标识、world_size及精度后才允许写入该运行。不接受普通新实验复用已有目录。
+- `--smoke-test N`继续必需，恢复时表示累计更新目标N；例如先到2，再用resume到6，共6次而非额外6次。epochs和完整日程不因分段缩短，要求saved_global_step < N ≤ total_steps。正式无界模式不在本轮。
+- 每个完整epoch结束且清梯度后保存；即使有限步目标刚好位于轮末，也先保存再退出。轮内停止不覆盖完整last，第一轮尚未完成时可以没有last；异常中断后从最近完整epoch重跑未保存的轮内工作。
+- 负载至少含：模型、AdamW、completed_epoch/next_epoch、累计global_step/各rank样本数、完整配置/日程预算、sampler seed/下一epoch、world_size/精度、各rank真实RNG及实际generator状态、软件/代码版本。当前LR是函数，保存预算参数与global_step即可，不为形式完整另建scheduler对象；BF16没有实际scaler则不存虚构scaler。
+- 数据标识复用可信数据的realpath、train样本数/shape/dtype，以及现有 `config.json`/`manifest.csv` 的SHA256（小测试夹具不存在时明确记缺省并保持一致）。正式NPY按已审计且不变的数据使用，不在每epoch重新哈希或审计全部数组；这不构成检测任意NPY篡改的保证。小元数据哈希只在启动计算并复用。
+- 写入使用同目录临时文件和os.replace；所有rank先在相同epoch阶段收集状态，rank0写文件并按既有错误传播方式通知各rank。写入失败不得损坏上一完整last。恢复CPU加载后按训练设备放置模型/AdamW，动量张量要匹配参数设备，Torch CPU RNG保持CPU；不盲目把所有状态张量迁移GPU。
+- 保留已有resolved_config和训练日志；resume在同一training_log.jsonl追加event:resume头作为日志分段，记录父last及起始步，再延续写last。这是首版已审阅接受的简化，不要求另建文件。旧日志可能有未保存轮内的记录，不删除或重写这些证据，也不把旧日志尾部当恢复进度。首版不开发日志合并/去重工具。
+
+首版独立4项通过，CPU/GPU模型与AdamW差异0、GPU CUDA/rank RNG一致，写入失败不损坏旧last。修订1独立2项/16.113s通过：完整training/目录/元数据/精度核对有效，拒绝后last与日志不变；非恒定日程恢复首步4.340990257669732e-5，模型/AdamW差0，未重新预热。见[最终验收与同步](changelog/R008/01-revision.md)。产品b0e835a已快进同步dev，目标2项/10.998s通过；不重复已通过GPU/原子写或全套回归，不能由此宣称任意配置都可恢复。

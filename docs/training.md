@@ -2,7 +2,7 @@
 
 更新日期：2026-10-28。R007有限步范围已验收，产品617482d已同步dev并通过关键复测；不表示完整训练验收完成。
 
-当前状态以[修订6验收与同步](changelog/R007/06-revision.md)和[任务单14](../HANDOFF.md)为准：统一参数容差对照及回滚说明已收口，正式JSON/真实数据GPU两步产物已核对；四产品提交617482d已快进同步dev，目标关键6项5过1授权skip。下文任务单11/修订5说明保留历史背景，不再表示未提交/待同步或待返工，不重跑GPU或恢复扩展门槛。
+R007已验收/同步。当前[R008修订1](changelog/R008/01-revision.md)已完成验收和提交同步，产品b0e835a已快进纳入dev，目标两个关键恢复用例通过；同配置CPU/GPU及原子写证据保留。[HANDOFF任务单4](../HANDOFF.md)记录最终状态，无待执行返工，不重复已通过GPU或扩展测试。下文R007旧状态仅为历史背景，不覆盖R008现状。
 
 [返回文档索引](README.md)
 
@@ -69,7 +69,7 @@ loss = terms["loss"].mean()
 
 ## 依赖与状态
 
-入口/配置路径已由R007创建，实施修订5按当前HANDOFF收缩范围后推进GPU。数据排列见[data.md](data.md)，已确认优化值见[optimization.md](optimization.md)，随机状态见[randomness.md](randomness.md)，完整保存恢复见[checkpoints.md](checkpoints.md)，完整验证调度见[evaluation.md](evaluation.md)。后两者仍属后续接入，不能为了完善跨环境鲁棒性无限推迟实验。
+入口/配置已由R007验收并同步，R008准备在同一入口接入训练随机状态与epoch恢复。数据排列见[data.md](data.md)，优化值见[optimization.md](optimization.md)，随机状态见[randomness.md](randomness.md)，本轮保存恢复见[checkpoints.md](checkpoints.md)。完整验证调度仍在[evaluation.md](evaluation.md)后续接入，不为了跨环境鲁棒性推迟实验，也不把R008计划写成已经实现。
 
 ## 2026-10-28用户范围调整：绕过Windows CPU DDP
 
