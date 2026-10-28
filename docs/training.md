@@ -1,6 +1,8 @@
 # 训练入口、DDP 与梯度累积
 
-更新日期：2026-10-27。状态沿用拆分前方案；文档整理不表示代码实现或训练验收完成。
+更新日期：2026-10-28。R007有限步范围已验收，产品617482d已同步dev并通过关键复测；不表示完整训练验收完成。
+
+当前状态以[修订6验收与同步](changelog/R007/06-revision.md)和[任务单14](../HANDOFF.md)为准：统一参数容差对照及回滚说明已收口，正式JSON/真实数据GPU两步产物已核对；四产品提交617482d已快进同步dev，目标关键6项5过1授权skip。下文任务单11/修订5说明保留历史背景，不再表示未提交/待同步或待返工，不重跑GPU或恢复扩展门槛。
 
 [返回文档索引](README.md)
 
@@ -12,15 +14,15 @@
 
 ## 入口与循环职责
 
-当前尚无ResShift训练入口。R007已选择在261023_Leizheng_resshift内新增train_das.py、configs/das_swin.json和das_dataset.py，以标准库JSON和一个循环连接Swin；文件尚未创建，不引入通用训练框架。当前任务见[HANDOFF](../HANDOFF.md)。
+R007已在261023_Leizheng_resshift内新增train_das.py、configs/das_swin.json和das_dataset.py，以标准库JSON和一个循环连接Swin。修订4的sampler/respacing/buffer摘要产品修复已关闭，整体未验收/提交/同步dev；当前按[HANDOFF任务单11](../HANDOFF.md)保留一个可信完整组正常对照，优先正式配置与真实数据GPU有限步运行。[实验优先决策](changelog/R007/experiment-first-plan.md)替代旧扩展测试门槛，不引入通用训练框架。
 
 R007入口先提供--config/--data-dir/--output-dir/--device及必需的--smoke-test N（实际更新次数），单卡和torchrun共用真实循环；参数和有效运行配置写入独立新目录。当前不提供resume或无界正式训练，完整保存恢复和完整验证接通后再开放正式模式。通过torchrun读取rank/local_rank/world_size，sampler显式分片；通信后端须按实际环境核验，不因本机调试通过宣称目标双4090通过。
 
 ## R007：当前实施与验证范围
 
-R007待实施：只读NPY配对/索引、用户已确认的全局排列分片、配置显式构建Swin/15步扩散、rank独立训练随机流、CPU FP32或单卡CUDA BF16、样本数加权累积/尾组、裁剪/AdamW/按实际更新推进的warmup+cosine，以及DDP no_sync和sum/count日志。每次更新末才允许smoke停止；不重写共享模型/扩散，不改已提交同步的R006成果。
+R007当前目标：复用已实现的只读配对、采样/输入映射、随机流、有限性、学习率与检查点，在完整累积组上保留一次独立全batch正常数值对照，并尽早尝试真实train、正式JSON的2次GPU更新。实际240样本在既定单卡/双卡配置均无不足组；尾组/末尾小batch逐窗口观察器、故障矩阵和buffer产品拒绝路径补测延期，不再作为上GPU的前置条件。改变样本量或batch等导致不足组时再验证尾组。每次更新末才允许smoke停止，不重写共享模型/扩散或R006成果。
 
-当前模型buffer只有固定几何attn_mask/relative_position_index；R007拟在核对跨rank模型配置/几何与buffer清单后，使用DDP(broadcast_buffers=False)，意外有状态buffer应拒绝并重新审查同步需求，不使用私有忽略API。本机Gloo可用标志为True、NCCL为False、GPU仅一张RTX5050，CPU两进程逻辑与单GPU BF16分别验收；目标双CUDA/NCCL仍未验收。
+当前模型buffer只有固定几何attn_mask/relative_position_index；DDP(broadcast_buffers=False)前已核对配置/几何、buffer清单和字节摘要，训练后检查不变，未知有状态buffer拒绝。修订4摘要有效，但拒绝用例复制测试内判断，未锁住产品路径；本次计划去掉自证拒绝声明，保留摘要检查，不为测试重构生产判断。Windows CPU DDP默认可选；已有单RTX5050 BF16小夹具与双类checkpoint历史证据不等于目标双CUDA/NCCL验收。真实GPU多卡仅在实际使用时验证，不以CPU兼容性作为前置。
 
 smoke输出只含配置/环境/更新与结果证据，不写半份last.pt，不计算val/test指标。下表仍是完整训练的后续职责；R007不代表每epoch完整保存、恢复一致性、完整15步采样或效果评价已经实现。正式参数规模/尺寸资源也不随小数据夹具通过而升级。
 
@@ -53,7 +55,7 @@ loss = terms["loss"].mean()
 
 `noise` 可由训练器显式生成以便管理独立随机流，也可由扩散函数按已控制的训练 RNG 生成，实施时统一选一种；同一次调用只生成一份实际使用的扩散噪声。若使用 DDP.no_sync 避免前三次 micro-step 的通信，作用域须同时覆盖前向和反向，第 4 次正常同步；只包 backward 不能达到预期。当前每卡 120 个 micro-step 可整除累积次数 4；将来改变采样量或裁窗计数时，应显式处理尾部不足一组的累积，不丢梯度或按错误除数更新。
 
-小规模更新、DDP、目标资源与恢复仍分阶段验收；当前只有R007任务制单，没有新增训练产品。优化器/学习率/预算和完整遍历已由用户确认，验证频率及评价待定项不随之冻结。
+小规模更新、真实GPU、DDP和恢复仍分别记录。历史修订4复审82项81过1败；Windows绕过后82项81过1授权skip。尾组和buffer拒绝测试漏检继续延期，未写成修复。修订5正式GPU两步产物已核对，其82项仍为Gemini执行记录；修订6Codex独立定向1项通过，统一全254参数容差，步后最大差5.172566e-6，修订5的bias缺口关闭。当前有限步实现已验收，不重复GPU/全套测试。优化器/学习率/预算和完整遍历已确认，验证频率及评价仍待定。
 
 参考：[PyTorch torchrun](https://docs.pytorch.org/docs/2.14/elastic/run.html)、[DDP 与 no_sync](https://docs.pytorch.org/docs/2.14/generated/torch.nn.parallel.DistributedDataParallel.html)。
 
@@ -67,4 +69,8 @@ loss = terms["loss"].mean()
 
 ## 依赖与状态
 
-入口/配置路径已由R007任务选择，尚未创建。数据排列见[data.md](data.md)，已确认优化值见[optimization.md](optimization.md)，随机状态见[randomness.md](randomness.md)，完整保存恢复见[checkpoints.md](checkpoints.md)，完整验证调度见[evaluation.md](evaluation.md)。后两者仍属后续接入。
+入口/配置路径已由R007创建，实施修订5按当前HANDOFF收缩范围后推进GPU。数据排列见[data.md](data.md)，已确认优化值见[optimization.md](optimization.md)，随机状态见[randomness.md](randomness.md)，完整保存恢复见[checkpoints.md](checkpoints.md)，完整验证调度见[evaluation.md](evaluation.md)。后两者仍属后续接入，不能为了完善跨环境鲁棒性无限推迟实验。
+
+## 2026-10-28用户范围调整：绕过Windows CPU DDP
+
+用户授权直接取消或绕过libuv/Gloo阻塞。Codex已将Windows CPU双进程用例改为默认明确skip，仅`RESSHIFT_RUN_WINDOWS_DDP=1`主动启用；它不再是本轮验收门槛，真实DDP与目标双卡仍未验证。该次[绕过实施与验证](changelog/R007/windows-ddp-bypass.md)未改生产训练器与依赖；同日后续[实验优先决策](changelog/R007/experiment-first-plan.md)进一步延期尾组边界/buffer拒绝路径补测，当前以任务单11为准。

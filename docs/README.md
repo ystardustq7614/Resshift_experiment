@@ -6,7 +6,7 @@
 
 - [阶段里程碑](milestones.md)：事项、状态和一句话完成记录。
 - [当前 HANDOFF](../HANDOFF.md)：Gemini 本轮任务与验收要求。
-- [CHANGELOG](../CHANGELOG.md)：决策、实际实施和审阅证据。
+- [CHANGELOG](changelog/README.md)：决策、实际实施和审阅证据。
 
 ## 按修改方面查阅
 

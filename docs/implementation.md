@@ -1,6 +1,8 @@
 # 实施范围、代码影响与验收
 
-更新日期：2026-10-27。状态沿用拆分前方案；文档整理不表示代码实现或训练验收完成。
+更新日期：2026-10-28。R007有限步范围已验收，产品617482d已同步dev并通过关键复测；不表示完整训练验收完成。
+
+当前状态见[修订6验收与同步](changelog/R007/06-revision.md)：统一全254参数数值对照与回滚说明已收口，正式JSON/真实train单卡两步、8样本产物已核对；产品617482d已快进同步dev，目标关键6项5通过1授权skip。任务单14记录验收/同步完成，无待执行返工。以下任务单11阶段的未实施/未提交/待同步等说明仅为当时背景，不覆盖最新事实，也不恢复旧扩展门槛。
 
 [返回文档索引](README.md)
 
@@ -8,15 +10,15 @@
 
 ## 已完成的局部验收
 
-2026-10-27，R001 已完成 Swin 掩码、非移位／缓存／动态分支和相关尺寸类型修复；Gemini 的 13 项测试由 Codex 独立复跑全部通过，并补充完整几何参考及真实 BasicLayer CPU／CUDA BF16 前后向复核。修复提交 `1ddc516` 已从 test/code 快进同步到 dev，目标分支 13 项测试也全部通过。具体范围和证据见 [注意力记录](code-fixes/swin-attention.md) 与 [CHANGELOG](../CHANGELOG.md)。该结果不代表完整 Swin U-Net、优化器更新、采样、检查点或双卡验收通过。
+2026-10-27，R001 已完成 Swin 掩码、非移位／缓存／动态分支和相关尺寸类型修复；Gemini 的 13 项测试由 Codex 独立复跑全部通过，并补充完整几何参考及真实 BasicLayer CPU／CUDA BF16 前后向复核。修复提交 `1ddc516` 已从 test/code 快进同步到 dev，目标分支 13 项测试也全部通过。具体范围和证据见 [注意力记录](code-fixes/swin-attention.md) 与 [CHANGELOG](changelog/R001.md)。该结果不代表完整 Swin U-Net、优化器更新、采样、检查点或双卡验收通过。
 
-2026-10-27，R003 已完成扩散普通 MSE、字段／返回接口及对应测试，修复提交 `781d4b8` 已同步 dev；源／目标各 24 项回归通过，五类错误反例均被拦截。包含既定配置下 16×32、两层级真实 UNetModelSwin 的 CUDA BF16 单步更新；正式完整尺寸、检查点、采样、双卡及训练效果仍待验收。细节见 [loss 修复记录](code-fixes/diffusion-loss.md) 与 [CHANGELOG](../CHANGELOG.md)。
+2026-10-27，R003 已完成扩散普通 MSE、字段／返回接口及对应测试，修复提交 `781d4b8` 已同步 dev；源／目标各 24 项回归通过，五类错误反例均被拦截。包含既定配置下 16×32、两层级真实 UNetModelSwin 的 CUDA BF16 单步更新；正式完整尺寸、检查点、采样、双卡及训练效果仍待验收。细节见 [loss 修复记录](code-fixes/diffusion-loss.md) 与 [CHANGELOG](changelog/R003.md)。
 
-2026-10-27，R004 条件输入通道初始化及交付记录已验收；覆盖 2／4 倍小网络条件路径及同尺寸 Identity／拼接不变。修复提交 `1045e57` 已从 test/code 快进同步 dev，目标分支 32 项回归通过（19.223s），源分支此前独立复跑 32 项通过；本次只提交两个产品文件，相关状态文档仍未提交。细节见 [条件分支记录](code-fixes/unet-conditioning.md) 与 [CHANGELOG](../CHANGELOG.md)，不表示完整超分路线或正式 DAS 训练通过。
+2026-10-27，R004 条件输入通道初始化及交付记录已验收；覆盖 2／4 倍小网络条件路径及同尺寸 Identity／拼接不变。修复提交 `1045e57` 已从 test/code 快进同步 dev，目标分支 32 项回归通过（19.223s），源分支此前独立复跑 32 项通过；本次只提交两个产品文件，相关状态文档仍未提交。细节见 [条件分支记录](code-fixes/unet-conditioning.md) 与 [CHANGELOG](changelog/R004.md)，不表示完整超分路线或正式 DAS 训练通过。
 
-2026-10-27，R005 两类检查点接入及本机局部一致性已验收，修订 1 的假开启／零梯度测试缺口已关闭；源分支 44 项通过（21.143s），核对真实调用、CPU／CUDA BF16、dropout RNG、局部累积与参数更新，错误 emb 梯度反例已被拦截。产品提交 `a60e625` 已快进同步 dev，目标分支 44 项通过（21.212s）；相关状态文档仍未提交，目标双卡、正式尺寸资源与训练链路仍未验收。细节见 [检查点记录](code-fixes/gradient-checkpointing.md) 与 [CHANGELOG](../CHANGELOG.md)。
+2026-10-27，R005 两类检查点接入及本机局部一致性已验收，修订 1 的假开启／零梯度测试缺口已关闭；源分支 44 项通过（21.143s），核对真实调用、CPU／CUDA BF16、dropout RNG、局部累积与参数更新，错误 emb 梯度反例已被拦截。产品提交 `a60e625` 已快进同步 dev，目标分支 44 项通过（21.212s）；相关状态文档仍未提交，目标双卡、正式尺寸资源与训练链路仍未验收。细节见 [检查点记录](code-fixes/gradient-checkpointing.md) 与 [CHANGELOG](changelog/R005.md)。
 
-2026-10-27，R006局部已验收，F1～F3及F2-G全部关闭；源分支61项通过（25.523s），GPU同精度真实扩散预测/loss/梯度/步后参数最大差0，两侧各254个参数张量变化，错误反例被拦截。产品f4937bb已快进同步dev，目标分支61项通过（25.860s，无失败/跳过）。覆盖正式几何轻通道构造、128×256轻网络前向及小网络更新；正式参数规模、DDP通信和目标资源未验。细节见[矩形记录](code-fixes/rectangular-input.md)与[CHANGELOG](../CHANGELOG.md)。
+2026-10-27，R006局部已验收，F1～F3及F2-G全部关闭；源分支61项通过（25.523s），GPU同精度真实扩散预测/loss/梯度/步后参数最大差0，两侧各254个参数张量变化，错误反例被拦截。产品f4937bb已快进同步dev，目标分支61项通过（25.860s，无失败/跳过）。覆盖正式几何轻通道构造、128×256轻网络前向及小网络更新；正式参数规模、DDP通信和目标资源未验。细节见[矩形记录](code-fixes/rectangular-input.md)与[CHANGELOG](changelog/R006.md)。
 
 ## 代码影响范围
 
@@ -44,10 +46,14 @@
 
 当前已完成上述小规模真实Swin更新与局部矩形/检查点验收，尚未完成正式网络规模的训练更新、目标双卡显存/通信、完整链采样或端到端恢复一致性验收。数据包既有baseline不等于本次ResShift实现。
 
-R007已制单，待实现只读数据/配置/单卡与DDP有限步更新，不开放正式长训练或resume；已提交同步的R006是本轮依赖，不算R007新成果。优化起点和全局完整遍历采样已由用户确认，见[optimization.md](optimization.md)/[data.md](data.md)；当前范围见[training.md](training.md)。
+R007修订4已落盘，三项产品修复（单进程sampler、完整respacing防御、buffer字节摘要）已关闭，实际main采样/映射/LR与小GPU数值用例有历史通过证据。累积专项尾组漏检、不同预算负例及buffer拒绝自证仍属历史缺口。按用户最新[实验优先决策](changelog/R007/experiment-first-plan.md)，任务单11/实施修订5改为：一组完整累积正常对照 → 正式JSON/真实train的2次GPU更新尝试 → 一次相关回归。尾组边界/成套故障/buffer拒绝路径补测延期，Windows CPU DDP继续可选；不再按旧门槛返工。历史绕过后82项81过1skip，真实通信未验；当前新计划待执行，整体未验收/提交/同步。正式配置资源不足时单列待目标GPU验证，不回到无限扩测。见[HANDOFF](../HANDOFF.md)，优化起点/全局遍历见[optimization.md](optimization.md)/[data.md](data.md)，范围见[training.md](training.md)。不开放正式长训练或resume；已同步的R006仍为依赖。
 
 裁窗细节仍在[data.md](data.md)，完整保存恢复在[checkpoints.md](checkpoints.md)另轮推进；验证频率、SSIM、零能量相对L2、聚合/成功门槛和选模在[evaluation.md](evaluation.md)继续待定。
 
 ## 原方案章节去向
 
 完整迁移对照见 [文档索引](README.md#原方案迁移对照)。此前文档拆分未修改源码；后续实际实现和验收按上文局部记录与 CHANGELOG 维护。R001 未改变既有实验决策、数据或独立审计任务。
+
+## 2026-10-28用户范围调整：绕过Windows CPU DDP
+
+用户授权直接取消或绕过libuv/Gloo阻塞。Codex已将Windows CPU双进程用例改为默认明确skip，仅`RESSHIFT_RUN_WINDOWS_DDP=1`主动启用；不再作为本轮门槛，真实DDP与目标双卡仍未验证。该次[绕过实施与验证](changelog/R007/windows-ddp-bypass.md)未改生产训练器与依赖；同日后续[实验优先决策](changelog/R007/experiment-first-plan.md)进一步收缩边界补测，当前执行与验收以任务单11为准。
