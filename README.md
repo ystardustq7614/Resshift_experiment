@@ -8,15 +8,15 @@
 
 建议 Python 3.10，使用支持 BF16 的 NVIDIA GPU；双卡使用 Linux / NCCL。本地验证环境为 Python 3.10.20、PyTorch 2.10.0+cu130；目标服务器双卡尚未实测。
 
-在本分支根目录执行。先安装与服务器驱动匹配的 CUDA 版 PyTorch；下面以 CUDA 13.0 为例，其他可选版本见 [PyTorch 官方安装说明](https://pytorch.org/get-started/previous-versions/#v2100)。
+在本分支根目录执行。`environment.yml` 根据本机已验证版本导出核心运行依赖，面向 Linux / NVIDIA 服务器重建；不包含本机路径、Windows构建包或其他项目依赖，传递依赖由pip解析。它默认使用CUDA 13.0 wheel；服务器驱动需兼容，其他版本见 [PyTorch 官方安装说明](https://pytorch.org/get-started/previous-versions/#v2100)。
 
 ```bash
-python3.10 -m venv .venv
-source .venv/bin/activate
-python -m pip install torch==2.10.0 torchvision==0.25.0 --index-url https://download.pytorch.org/whl/cu130
-python -m pip install -r requirements.txt
+conda env create -f environment.yml
+conda activate das-resshift
 python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.is_bf16_supported())"
 ```
+
+若驱动需使用CUDA 12.8或12.6，在创建环境前同步替换YAML中的wheel地址 `cu130` 和torch/torchvision版本后缀 `+cu130` 为 `cu128` 或 `cu126`。已有合适CUDA环境时也可使用 `python -m pip install -r requirements.txt`。该文件是核心依赖重建清单，不是跨平台逐包锁文件；服务器环境尚未实际创建验证。
 
 数据单独上传到服务器，例如 `/data/das`：
 

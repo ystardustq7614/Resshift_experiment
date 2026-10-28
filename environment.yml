@@ -1,0 +1,15 @@
+# Linux / NVIDIA rebuild of the verified training runtime; not a Windows lockfile.
+# CUDA 13.0 wheels require a compatible server driver. See README.md for alternatives.
+name: das-resshift
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10.20
+  - pip
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu130
+      - torch==2.10.0+cu130
+      - torchvision==0.25.0+cu130
+      - numpy==2.2.6
+      - timm==0.9.16
+      - einops==0.8.2
