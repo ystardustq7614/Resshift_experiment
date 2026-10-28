@@ -32,7 +32,211 @@ def compute_buffer_digest(buf: torch.Tensor) -> str:
     ).hexdigest()
 
 
-def parse_args() -> argparse.Namespace:
+def compute_data_identity(data_dir: str, dataset: Any) -> Dict[str, Any]:
+    """计算数据集的轻量身份标识，用于跨 run/resume 严格核验 (R008)"""
+    norm_data_dir = os.path.realpath(data_dir)
+    num_samples = len(dataset)
+    sample_shape: List[int] = []
+    sample_dtype = ""
+    if num_samples > 0:
+        sample_0 = dataset[0]
+        if "noisy" in sample_0:
+            sample_shape = list(sample_0["noisy"].shape)
+            sample_dtype = str(sample_0["noisy"].dtype)
+
+    def _file_hash(p: str) -> Optional[str]:
+        if os.path.isfile(p):
+            h = hashlib.sha256()
+            with open(p, "rb") as f:
+                while chunk := f.read(65536):
+                    h.update(chunk)
+            return h.hexdigest()
+        return None
+
+    config_json_path = os.path.join(data_dir, "config.json")
+    manifest_csv_path = os.path.join(data_dir, "manifest.csv")
+
+    return {
+        "data_dir_realpath": norm_data_dir,
+        "num_samples": num_samples,
+        "sample_shape": sample_shape,
+        "sample_dtype": sample_dtype,
+        "config_json_sha256": _file_hash(config_json_path),
+        "manifest_csv_sha256": _file_hash(manifest_csv_path),
+    }
+
+
+def save_checkpoint(
+    ckpt_path: str,
+    raw_model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    epoch: int,
+    global_step: int,
+    total_samples_processed: int,
+    total_epochs: int,
+    total_steps: int,
+    warmup_steps: int,
+    updates_per_epoch: int,
+    cfg: Dict[str, Any],
+    training_cfg: Dict[str, Any],
+    world_size: int,
+    device: torch.device,
+    use_cuda_bf16: bool,
+    data_identity: Optional[Dict[str, Any]],
+    rng_states: Any,
+) -> None:
+    """原子保存完整 epoch checkpoint 到临时文件后原子替换 (checkpoints/last.pt, R008)"""
+    ckpt_dir = os.path.dirname(os.path.abspath(ckpt_path))
+    os.makedirs(ckpt_dir, exist_ok=True)
+    tmp_path = os.path.join(ckpt_dir, f".tmp_{os.getpid()}_{epoch}_{global_step}.pt")
+
+    model_state = {k: v.cpu().clone() for k, v in raw_model.state_dict().items()}
+
+    def _get_trainer_sha256() -> str:
+        try:
+            with open(__file__, "rb") as f:
+                return hashlib.sha256(f.read()).hexdigest()
+        except Exception:
+            return "unknown"
+
+    trainer_sha256 = _get_trainer_sha256()
+
+    payload = {
+        "model": model_state,
+        "optimizer": optimizer.state_dict(),
+        "epoch": epoch,
+        "next_epoch": epoch + 1,
+        "global_step": global_step,
+        "total_samples_processed": total_samples_processed,
+        "total_epochs": total_epochs,
+        "total_steps": total_steps,
+        "warmup_steps": warmup_steps,
+        "updates_per_epoch": updates_per_epoch,
+        "config": cfg,
+        "training_cfg": training_cfg,
+        "world_size": world_size,
+        "device_type": device.type,
+        "use_cuda_bf16": use_cuda_bf16,
+        "data_identity": data_identity,
+        "train_das_sha256": trainer_sha256,
+        "rng_states": rng_states,
+        "version_info": {
+            "python": sys.version,
+            "torch": torch.__version__,
+            "train_das_sha256": trainer_sha256,
+        },
+    }
+
+    try:
+        torch.save(payload, tmp_path)
+        os.replace(tmp_path, ckpt_path)
+    finally:
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+
+
+def load_checkpoint(ckpt_path: str, device: torch.device = torch.device("cpu")) -> Dict[str, Any]:
+    """使用显式安全协议在 CPU 加载自生成的完整 checkpoint (R008)"""
+    if not os.path.isfile(ckpt_path):
+        raise FileNotFoundError(f"Checkpoint 文件未找到: {ckpt_path}")
+    return torch.load(ckpt_path, map_location="cpu", weights_only=False)
+
+
+def validate_resume_checkpoint(
+    checkpoint: Dict[str, Any],
+    cfg: Dict[str, Any],
+    data_identity: Dict[str, Any],
+    world_size: int,
+    device_str: str,
+    smoke_test_limit: int,
+    use_cuda_bf16: Optional[bool] = None,
+) -> None:
+    """恢复前强校验配置、数据规格、硬件拓扑与步数上界一致性 (R008)"""
+    ckpt_ws = checkpoint.get("world_size", 1)
+    if ckpt_ws != world_size:
+        raise ValueError(
+            f"分布式 world_size 不匹配: checkpoint 为 {ckpt_ws}, 当前运行环境为 {world_size}！"
+        )
+
+    ckpt_device_type = checkpoint.get("device_type")
+    if ckpt_device_type is not None and ckpt_device_type != device_str:
+        raise ValueError(
+            f"运行设备与 checkpoint 不一致: checkpoint 为 {ckpt_device_type}, 当前运行为 {device_str}！"
+        )
+
+    if use_cuda_bf16 is None:
+        use_cuda_bf16 = (device_str == "cuda" and torch.cuda.is_available() and torch.cuda.is_bf16_supported())
+    ckpt_bf16 = checkpoint.get("use_cuda_bf16")
+    if ckpt_bf16 is not None and ckpt_bf16 != use_cuda_bf16:
+        raise ValueError(
+            f"BF16 精度配置与 checkpoint 不一致: checkpoint 为 {ckpt_bf16}, 当前运行为 {use_cuda_bf16}！"
+        )
+
+    # 首版恢复机制仅支持 num_workers=0
+    training_cfg = cfg.get("training", {})
+    num_workers = int(training_cfg.get("num_workers", 0))
+    if num_workers != 0:
+        raise ValueError(f"首版恢复机制仅支持 num_workers=0，当前配置为 {num_workers}，拒绝启动！")
+
+    ckpt_training_cfg = checkpoint.get("training_cfg")
+    if ckpt_training_cfg is not None and int(ckpt_training_cfg.get("num_workers", 0)) != 0:
+        raise ValueError(
+            f"Checkpoint 中记录的 num_workers ({ckpt_training_cfg.get('num_workers')}) 不为 0，首版恢复不支持多 worker 状态！"
+        )
+
+    # 完整配置比对（model, diffusion, training）
+    ckpt_cfg = checkpoint.get("config", {})
+    if ckpt_cfg.get("model") != cfg.get("model"):
+        raise ValueError("模型配置与 checkpoint 不一致！")
+    if ckpt_cfg.get("diffusion") != cfg.get("diffusion"):
+        raise ValueError("扩散配置与 checkpoint 不一致！")
+    if ckpt_cfg.get("training") is not None and ckpt_cfg.get("training") != cfg.get("training"):
+        raise ValueError("训练配置 (training) 与 checkpoint 不一致！")
+    if ckpt_training_cfg is not None and ckpt_training_cfg != cfg.get("training"):
+        raise ValueError("训练配置 (training_cfg) 与 checkpoint 不一致！")
+
+    # 完整轻量数据标识核对（包含目录真实路径与小文件哈希缺省/存在状态）
+    ckpt_data_id = checkpoint.get("data_identity")
+    if ckpt_data_id is not None:
+        ckpt_dir = ckpt_data_id.get("data_dir_realpath")
+        curr_dir = data_identity.get("data_dir_realpath")
+        if ckpt_dir is not None and curr_dir is not None:
+            if os.path.normcase(os.path.realpath(ckpt_dir)) != os.path.normcase(os.path.realpath(curr_dir)):
+                raise ValueError(
+                    f"数据集真实路径与 checkpoint 不匹配: {ckpt_dir} vs {curr_dir}！"
+                )
+        if (
+            ckpt_data_id.get("num_samples") != data_identity.get("num_samples")
+            or ckpt_data_id.get("sample_shape") != data_identity.get("sample_shape")
+            or ckpt_data_id.get("sample_dtype") != data_identity.get("sample_dtype")
+        ):
+            raise ValueError(
+                f"数据规格与 checkpoint 不匹配: {ckpt_data_id} vs {data_identity}！"
+            )
+        if ckpt_data_id.get("config_json_sha256") != data_identity.get("config_json_sha256"):
+            raise ValueError(
+                f"数据集 config.json 哈希/存在状态与 checkpoint 不匹配: "
+                f"checkpoint 为 {ckpt_data_id.get('config_json_sha256')}, 当前为 {data_identity.get('config_json_sha256')}！"
+            )
+        if ckpt_data_id.get("manifest_csv_sha256") != data_identity.get("manifest_csv_sha256"):
+            raise ValueError(
+                f"数据集 manifest.csv 哈希/存在状态与 checkpoint 不匹配: "
+                f"checkpoint 为 {ckpt_data_id.get('manifest_csv_sha256')}, 当前为 {data_identity.get('manifest_csv_sha256')}！"
+            )
+
+    saved_global_step = checkpoint.get("global_step", 0)
+    total_steps = checkpoint.get("total_steps", 0)
+    if not (saved_global_step < smoke_test_limit <= total_steps):
+        raise ValueError(
+            f"恢复目标 --smoke-test ({smoke_test_limit}) 必须大于已保存 global_step ({saved_global_step}) "
+            f"且不超过总可用步数 ({total_steps})！"
+        )
+
+
+def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="ResShift 半合成 DAS 去噪有限步训练入口")
     parser.add_argument("--config", type=str, required=True, help="JSON 配置文件路径")
     parser.add_argument("--data-dir", type=str, required=True, help="DAS 配对数据集根目录")
@@ -50,11 +254,17 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="显式有限步更新数（正整数），达到后安全退出",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="显式指定恢复使用的 checkpoint 路径（必须为当前 output_dir 下的 checkpoints/last.pt）",
+    )
+    return parser.parse_args(args)
 
 
-def validate_paths(output_dir: str, data_dir: str) -> None:
-    """严格校验输出路径，防止覆盖既有结果或污染原始数据目录 (F1)"""
+def validate_paths(output_dir: str, data_dir: str, is_resume: bool = False) -> None:
+    """严格校验输出路径，防止覆盖既有结果或污染原始数据目录 (F1/R008)"""
     norm_out = os.path.normcase(os.path.realpath(output_dir))
     norm_data = os.path.normcase(os.path.realpath(data_dir))
 
@@ -71,8 +281,12 @@ def validate_paths(output_dir: str, data_dir: str) -> None:
     if is_inside:
         raise ValueError(f"输出目录不能位于数据目录内部: {output_dir} in {data_dir}")
 
-    if os.path.exists(output_dir):
-        raise FileExistsError(f"输出目录已存在，拒绝覆盖: {output_dir}")
+    if not is_resume:
+        if os.path.exists(output_dir):
+            raise FileExistsError(f"输出目录已存在，拒绝覆盖: {output_dir}")
+    else:
+        if not os.path.exists(output_dir):
+            raise FileNotFoundError(f"恢复模式下输出目录不存在: {output_dir}")
 
 
 def validate_and_resolve_config(cfg: Dict[str, Any]) -> Dict[str, Any]:
@@ -349,9 +563,16 @@ def run_training_loop(
     world_size: int,
     log_file: Optional[str] = None,
     rank_generator: Optional[torch.Generator] = None,
+    start_epoch: int = 0,
+    initial_global_step: int = 0,
+    initial_samples_processed: int = 0,
+    output_dir: Optional[str] = None,
+    data_identity: Optional[Dict[str, Any]] = None,
+    cfg: Optional[Dict[str, Any]] = None,
+    updates_per_epoch: Optional[int] = None,
 ) -> Tuple[int, int, bool]:
     """
-    流式有限步训练循环核心函数（可被 CLI 与单元测试直接复用，彻底解决 F2/F5/F7）。
+    流式有限步训练循环核心函数（可被 CLI 与单元测试直接复用，彻底解决 F2/F5/F7/R008）。
     返回: (global_step, total_samples_processed, reached_target)
     """
     use_cuda_bf16 = device.type == "cuda" and torch.cuda.is_bf16_supported()
@@ -362,19 +583,21 @@ def run_training_loop(
     peak_lr = float(training_cfg["peak_lr"])
     min_lr = float(training_cfg["min_lr"])
 
-    global_step = 0
-    total_samples_processed = 0
+    global_step = initial_global_step
+    total_samples_processed = initial_samples_processed
     reached_smoke_target = False
 
     ddp_model.train()
     num_batches_per_epoch = len(dataloader)
+    if updates_per_epoch is None:
+        updates_per_epoch = math.ceil(num_batches_per_epoch / float(accumulation_steps))
 
     if rank_generator is None:
         rank_generator = torch.Generator(device="cpu").manual_seed(
             int(training_cfg.get("seed", 20261027)) + 1000 + rank
         )
 
-    for epoch in range(total_epochs):
+    for epoch in range(start_epoch, total_epochs):
         if reached_smoke_target:
             break
         if sampler is not None:
@@ -531,13 +754,78 @@ def run_training_loop(
                 reached_smoke_target = True
                 break
 
+        # 完整 epoch 结束且梯度清理后保存 checkpoint (R008)
+        if batch_idx == num_batches_per_epoch:
+            if output_dir is not None:
+                local_rng = {
+                    "python": random.getstate(),
+                    "numpy": np.random.get_state(),
+                    "torch_cpu": torch.get_rng_state(),
+                    "torch_cuda": (torch.cuda.get_rng_state(device) if device.type == "cuda" else None),
+                    "rank_generator": (rank_generator.get_state() if rank_generator is not None else None),
+                }
+                ckpt_target = os.path.join(output_dir, "checkpoints", "last.pt")
+                if is_distributed:
+                    all_rngs = [None] * world_size
+                    dist.all_gather_object(all_rngs, local_rng)
+                    save_err = None
+                    if rank == 0:
+                        try:
+                            save_checkpoint(
+                                ckpt_path=ckpt_target,
+                                raw_model=raw_model,
+                                optimizer=optimizer,
+                                epoch=epoch,
+                                global_step=global_step,
+                                total_samples_processed=total_samples_processed,
+                                total_epochs=total_epochs,
+                                total_steps=total_steps,
+                                warmup_steps=warmup_steps,
+                                updates_per_epoch=updates_per_epoch,
+                                cfg=cfg if cfg is not None else {},
+                                training_cfg=training_cfg,
+                                world_size=world_size,
+                                device=device,
+                                use_cuda_bf16=use_cuda_bf16,
+                                data_identity=data_identity,
+                                rng_states=all_rngs,
+                            )
+                        except Exception as e:
+                            save_err = str(e)
+                    err_list = [save_err]
+                    dist.broadcast_object_list(err_list, src=0)
+                    if err_list[0] is not None:
+                        raise RuntimeError(f"主进程保存 checkpoint 失败: {err_list[0]}")
+                else:
+                    if rank == 0:
+                        save_checkpoint(
+                            ckpt_path=ckpt_target,
+                            raw_model=raw_model,
+                            optimizer=optimizer,
+                            epoch=epoch,
+                            global_step=global_step,
+                            total_samples_processed=total_samples_processed,
+                            total_epochs=total_epochs,
+                            total_steps=total_steps,
+                            warmup_steps=warmup_steps,
+                            updates_per_epoch=updates_per_epoch,
+                            cfg=cfg if cfg is not None else {},
+                            training_cfg=training_cfg,
+                            world_size=world_size,
+                            device=device,
+                            use_cuda_bf16=use_cuda_bf16,
+                            data_identity=data_identity,
+                            rng_states={0: local_rng},
+                        )
+
     return global_step, total_samples_processed, reached_smoke_target
 
 
 def main() -> None:
     args = parse_args()
+    is_resume = args.resume is not None
 
-    # 1. 严格校验 CLI 参数与输出路径防御 (F1)
+    # 1. 严格校验 CLI 参数与输出路径防御 (F1/R008)
     if args.smoke_test is None or args.smoke_test <= 0:
         raise ValueError(f"--smoke-test 必须为大于 0 的正整数，当前输入为: {args.smoke_test}")
 
@@ -546,7 +834,21 @@ def main() -> None:
 
     output_dir = os.path.abspath(args.output_dir)
     data_dir = os.path.abspath(args.data_dir)
-    validate_paths(output_dir, data_dir)
+
+    checkpoint: Optional[Dict[str, Any]] = None
+    if is_resume:
+        resume_path = os.path.abspath(args.resume)
+        if not os.path.isfile(resume_path):
+            raise FileNotFoundError(f"--resume 文件未找到: {args.resume}")
+        expected_last = os.path.abspath(os.path.join(output_dir, "checkpoints", "last.pt"))
+        if os.path.normcase(os.path.realpath(resume_path)) != os.path.normcase(os.path.realpath(expected_last)):
+            raise ValueError(
+                f"--resume 路径 ({args.resume}) 必须指向匹配输出目录下的 checkpoints/last.pt ({expected_last})"
+            )
+        validate_paths(output_dir, data_dir, is_resume=True)
+        checkpoint = load_checkpoint(resume_path, device=torch.device("cpu"))
+    else:
+        validate_paths(output_dir, data_dir, is_resume=False)
 
     # 2. 读取并严格校验配置 (F4)
     with open(args.config, "r", encoding="utf-8") as f:
@@ -600,7 +902,8 @@ def main() -> None:
         dir_err = None
         if rank == 0:
             try:
-                os.makedirs(output_dir, exist_ok=False)
+                os.makedirs(output_dir, exist_ok=is_resume)
+                os.makedirs(os.path.join(output_dir, "checkpoints"), exist_ok=True)
             except Exception as e:
                 dir_err = str(e)
 
@@ -612,21 +915,39 @@ def main() -> None:
         elif dir_err is not None:
             raise RuntimeError(f"创建输出目录失败: {dir_err}")
 
-        # 4. 随机数种子初始化
+        # 4. 随机数种子初始化与 generator 准备 (R008: 仅非恢复时全量初始化种子)
         training_cfg = cfg["training"]
         base_seed = int(training_cfg["seed"])
 
-        random.seed(base_seed)
-        np.random.seed(base_seed)
-        torch.manual_seed(base_seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(base_seed)
+        if not is_resume:
+            random.seed(base_seed)
+            np.random.seed(base_seed)
+            torch.manual_seed(base_seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(base_seed)
+            rank_generator = torch.Generator(device="cpu").manual_seed(base_seed + 1000 + rank)
+        else:
+            rank_generator = torch.Generator(device="cpu")
 
         # 5. 构建数据集与数据规格校验 (在 DDP 构造前完成，修复 F6/P1 dataset.H/W 缺陷)
         model_cfg = cfg["model"]
         expected_hw = tuple(model_cfg["input_size"]) if model_cfg.get("input_size") is not None else None
         dataset = PairDataset(data_dir=data_dir, split="train", expected_hw=expected_hw)
         dataset_len = len(dataset)
+        data_id = compute_data_identity(data_dir, dataset)
+
+        if is_resume:
+            assert checkpoint is not None
+            use_cuda_bf16 = (device.type == "cuda" and torch.cuda.is_bf16_supported())
+            validate_resume_checkpoint(
+                checkpoint=checkpoint,
+                cfg=cfg,
+                data_identity=data_id,
+                world_size=world_size,
+                device_str=device_str,
+                smoke_test_limit=args.smoke_test,
+                use_cuda_bf16=use_cuda_bf16,
+            )
 
         if dataset_len % world_size != 0:
             raise ValueError(
@@ -737,7 +1058,7 @@ def main() -> None:
         warmup_steps = warmup_epochs * updates_per_epoch
 
         # 显式步数上界拒绝 (F2)
-        if args.smoke_test > total_steps:
+        if not is_resume and args.smoke_test > total_steps:
             raise ValueError(
                 f"--smoke-test 请求的更新步数 ({args.smoke_test}) 超过了当前配置在 {total_epochs} 个 epochs 下的总可用步数 ({total_steps})！"
             )
@@ -750,7 +1071,42 @@ def main() -> None:
             weight_decay=float(training_cfg["weight_decay"]),
         )
 
-        if rank == 0:
+        if is_resume:
+            assert checkpoint is not None
+            # 恢复模型权重
+            raw_model.load_state_dict(checkpoint["model"])
+            # 恢复优化器动量与状态，并将优化器张量放置到对应 device
+            optimizer.load_state_dict(checkpoint["optimizer"])
+            for state in optimizer.state.values():
+                for k, v in state.items():
+                    if isinstance(v, torch.Tensor):
+                        state[k] = v.to(device)
+
+            # 恢复对应 rank 的 RNG 状态 (R008)
+            all_rngs = checkpoint["rng_states"]
+            if isinstance(all_rngs, dict):
+                rank_rng = all_rngs.get(rank, all_rngs.get(str(rank)))
+            elif isinstance(all_rngs, list):
+                rank_rng = all_rngs[rank]
+            else:
+                rank_rng = all_rngs
+
+            random.setstate(rank_rng["python"])
+            np.random.set_state(rank_rng["numpy"])
+            torch.set_rng_state(rank_rng["torch_cpu"])
+            if device.type == "cuda" and rank_rng.get("torch_cuda") is not None:
+                torch.cuda.set_rng_state(rank_rng["torch_cuda"], device)
+            rank_generator.set_state(rank_rng["rank_generator"])
+
+            start_epoch = int(checkpoint["next_epoch"])
+            initial_global_step = int(checkpoint["global_step"])
+            initial_samples_processed = int(checkpoint["total_samples_processed"])
+        else:
+            start_epoch = 0
+            initial_global_step = 0
+            initial_samples_processed = 0
+
+        if rank == 0 and not is_resume:
             resolved_cfg_path = os.path.join(output_dir, "resolved_config.json")
             tmp_cfg_path = resolved_cfg_path + ".tmp"
             with open(tmp_cfg_path, "w", encoding="utf-8") as f:
@@ -770,6 +1126,16 @@ def main() -> None:
             os.replace(tmp_cfg_path, resolved_cfg_path)
 
         log_file = os.path.join(output_dir, "training_log.jsonl") if rank == 0 else None
+        if rank == 0 and is_resume and log_file is not None:
+            resume_header = {
+                "event": "resume",
+                "parent_checkpoint": args.resume,
+                "start_epoch": start_epoch,
+                "start_global_step": initial_global_step,
+                "target_smoke_steps": args.smoke_test,
+            }
+            with open(log_file, "a", encoding="utf-8") as lf:
+                lf.write(json.dumps(resume_header) + "\n")
 
         # 8. 执行流式训练循环
         global_step, total_samples, reached_target = run_training_loop(
@@ -790,6 +1156,14 @@ def main() -> None:
             rank=rank,
             world_size=world_size,
             log_file=log_file,
+            rank_generator=rank_generator,
+            start_epoch=start_epoch,
+            initial_global_step=initial_global_step,
+            initial_samples_processed=initial_samples_processed,
+            output_dir=output_dir,
+            data_identity=data_id,
+            cfg=cfg,
+            updates_per_epoch=updates_per_epoch,
         )
 
         # 训练后 Buffer 不变性核验 (F6/P1)
@@ -798,7 +1172,7 @@ def main() -> None:
                 if not torch.equal(buf_before[b_name], b_val):
                     raise RuntimeError(f"Buffer {b_name} 在训练期间被修改，破坏了几何确定性不变性！")
 
-        # 9. 记录 smoke_result.json（根据 reached_target 精确判定状态，区分本地与全局样本计数，F2/F6）
+        # 9. 记录 smoke_result.json（根据 reached_target 精确判定状态，区分本地与全局样本计数，F2/F6/R008）
         if is_distributed:
             rank_reports = [None] * world_size
             dist.all_gather_object(rank_reports, {
@@ -829,6 +1203,8 @@ def main() -> None:
                 "world_size": world_size,
                 "device": str(device),
                 "use_cuda_bf16": (device.type == "cuda" and torch.cuda.is_bf16_supported()),
+                "is_resume": is_resume,
+                "parent_checkpoint": args.resume if is_resume else None,
             }
             tmp_smoke = smoke_result_path + ".tmp"
             with open(tmp_smoke, "w", encoding="utf-8") as f:
