@@ -1,0 +1,2 @@
+{"global_step": 0, "update_idx": 1, "epoch": 0, "batch_idx": 0, "lr": 5e-06, "grad_norm": 29.660627365112305, "mean_loss": 0.13556473702192307, "group_samples": 4}
+{"global_step": 1, "update_idx": 2, "epoch": 0, "batch_idx": 4, "lr": 5.0751252086811355e-06, "grad_norm": 1168594.75, "mean_loss": 0.07827588357031345, "group_samples": 4}

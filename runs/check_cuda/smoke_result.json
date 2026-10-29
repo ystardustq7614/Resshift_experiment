@@ -1,0 +1,20 @@
+{
+  "status": "completed",
+  "global_step": 2,
+  "target_smoke_steps": 2,
+  "local_samples_processed": 8,
+  "global_samples_processed": 8,
+  "rank_states": [
+    {
+      "rank": 0,
+      "samples_processed": 8,
+      "reached_target": true,
+      "global_step": 2
+    }
+  ],
+  "world_size": 1,
+  "device": "cuda:0",
+  "use_cuda_bf16": true,
+  "is_resume": false,
+  "parent_checkpoint": null
+}
