@@ -1,8 +1,8 @@
 # ResShift DAS 训练代码
 
-将 Swin U-Net / ResShift 用于配对 DAS 波场去噪：输入 noisy，监督目标 clean，使用普通 MSE。支持单卡 BF16、梯度累积、两类梯度检查点，以及完整 epoch 保存/下一 epoch 恢复。当前只有训练与恢复入口，尚未接入完整15步采样、验证指标和best选模。
+将 Swin U-Net / ResShift 用于配对 DAS 波场去噪：输入 noisy，监督目标 clean，使用普通 MSE。支持单卡 BF16、梯度累积、两类梯度检查点，以及完整 epoch 保存/下一 epoch 恢复。支持独立测试集完整15步采样评估与可视化；训练中尚未自动验证或按best选模。
 
-代码来自已验收的 R008：`bbb4c89`。本分支是独立代码快照，不含数据、测试、实验日志、备份或原仓库历史；不合并回 dev。
+代码来自已验收的 R008：`bbb4c89`。本分支保留服务器训练与评估代码及回传日志；不合并回 dev。评估回归测试位于 `tests/test_evaluate_das.py`。
 
 ## 环境与数据
 
@@ -68,3 +68,39 @@ python train_das.py --config configs/das_swin.json --data-dir /data/das \
 输出包括：`resolved_config.json`（配置/预算）、`training_log.jsonl`（loss/LR/梯度范数）、`checkpoints/last.pt`（模型/AdamW/进度/RNG）、`smoke_result.json`（本次执行结果）。恢复在原日志追加resume分段，进度以last为准。只加载自己生成且可信的last；当前不自动验证、早停或选best。
 
 主要文件：`train_das.py` 为训练/恢复入口，`das_dataset.py` 为只读配对NPY读取，`configs/das_swin.json` 为默认配置，`models/` 为模型与扩散实现。
+
+## 测试集评估与可视化
+
+在已有训练环境中补充绘图依赖。评估与绘图分开执行，重画图无需再次运行模型。
+
+```bash
+python -m pip install -r requirements-eval.txt
+
+# 单进程、逐样本、完整原始15步采样；数据目录必须包含 test_x.npy 和 test_y.npy。
+python evaluate_das.py \
+  --checkpoint runs/das_4gpu/checkpoints/last.pt \
+  --data-dir /data2/user/zyq/datasets/das-v1/dataset \
+  --output outputs/das_4gpu_test/evaluation_results.json \
+  --device cuda
+
+# 默认绘制全部测试样本，每个样本生成一张六面板 PNG 和 PDF。
+python visualize_das.py \
+  --results outputs/das_4gpu_test/evaluation_results.json \
+  --output-dir outputs/das_4gpu_test/figures
+```
+
+`--checkpoint` 只接受自己生成且可信的训练 checkpoint，默认使用其中保存的模型/扩散配置。可选 `--config` 接受原始配置或 `resolved_config.json`，并校验与 checkpoint 一致。默认 FP32 推理以延续既有评估口径；显存不足可显式加 `--precision bf16`，结果记录实际精度。CPU 使用 `--device cpu --precision fp32`。默认不裁剪预测振幅、不重复归一化；`--clip-denoised` 会在采样中将 x0 截到 [-1,1]，只有确认数据范围适用时才开启。
+
+输出的 `evaluation_results.json` 包含 noisy 输入基线、去噪结果的总体和逐样本指标、checkpoint 进度、随机种子和采样配置。同目录的 `evaluation_results_predictions.npy` 为按原测试索引排列的 float32 `[N,128,4096]` 预测，约72 MiB（36个样本）。两者都拒绝覆盖旧文件；重跑请指定新的 `--output`。预测数组在运行中逐样本写入，只有 JSON 的 `status=completed` 才表示整次评估完成。已有旧版结果 JSON 没有预测数组，需要重新评估才能绘图。
+
+- **RMSE**：`sqrt(sum((prediction-clean)^2)/元素数)`；全局先汇总平方误差，再开方，同时保留逐样本均值。
+- **相对 L2**：`||prediction-clean||₂ / ||clean||₂`；全局使用整个测试集的范数，同时保留逐样本均值。零能量 clean 的比值无定义，写为 JSON `null`，从逐样本相对 L2 均值中排除并记录有效样本数。
+- **SSIM**：直接在有符号的二维波场上计算，11×11 Gaussian、sigma=1.5、总体协方差、反射填充，包含边界像素后取均值。默认所有样本、noisy 与预测共用 `test_y` 全局 `max-min`；可用 `--ssim-data-range` 显式固定，跨 checkpoint 对比应使用相同范围。实现延续旧评估的边界口径，不能与裁掉边界的 SSIM 数值直接混比；指标采用 FP64 计算，旧版为 FP32，末位可能略有差异。[SSIM 参数参考](https://scikit-image.org/docs/0.24.x/api/skimage.metrics.html#skimage.metrics.structural_similarity)。
+
+图像与示例使用相同方向：横轴为相对通道，纵轴时间向下；红色正值、蓝色负值、白色零值。六面板依次是 clean、真实噪声、noisy、去噪预测、移除分量和预测误差。同一样本的面板共用由 clean 绝对值99.5百分位确定的对称色标；`--vmax` 可让不同样本也使用完全相同的色标。色标截色只影响显示，计算指标和保存数组不截幅、不平滑、不做逐图归一化。
+
+默认纵轴为采样点，避免从示意图猜测物理采样率。已知实际采样率时传 `--sample-rate <实际Hz>`，纵轴即可显示秒。可选 `--indices 0 6 12` 只绘制指定样本；`--time-samples 0 480` 只显示前480个时间采样点，图上指标仍对应完整样本。绘图参数保存在 `plot_metadata.json`。跨机器绘图时可用 `--data-dir` 和 `--predictions` 指向拷回本地的原数据和预测数组；两者必须来自同一次评估，脚本会校验形状与样本数。
+
+```bash
+python -m unittest discover -s tests -p 'test_evaluate_das.py' -v
+```
