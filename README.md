@@ -104,3 +104,19 @@ python visualize_das.py \
 ```bash
 python -m unittest discover -s tests -p 'test_evaluate_das.py' -v
 ```
+
+## 无外网时安装绘图依赖
+
+仓库附带 `outputs/matplotlib_offline_py310_linux.zip`（约40.6 MiB），包含 matplotlib 3.9.4 及依赖，共12个 wheel 包，适用于 **CPython 3.10 / Linux x86_64 / manylinux2014**。已核验压缩包完整性、Python版本要求和依赖闭包，尚未在服务器实际安装。其他Python版本或CPU架构请勿使用此二进制包。
+
+在服务器项目根目录、已激活的 `das-resshift` 环境执行：
+
+```bash
+git pull --ff-only
+python -m zipfile -e outputs/matplotlib_offline_py310_linux.zip .
+python -m pip install --no-index --find-links matplotlib_offline_py310_linux/wheels -r matplotlib_offline_py310_linux/requirements-eval.txt
+python -c "import matplotlib; print(matplotlib.__version__)"
+python visualize_das.py --results outputs/das_4gpu_test/evaluation_results.json --output-dir outputs/das_4gpu_test/figures
+```
+
+安装只读取本地 wheel，不连接 PyPI；不包含或请求安装 torch/CUDA 包。NumPy 1.26.4 作为依赖备用，已有满足要求的NumPy会保留。无需重新运行模型评估。ZIP中附带各wheel的SHA-256清单；ZIP自身SHA-256为 `9d9fd478e2ced504174178741514c1835bc77b6570e5b500a7a3aa27d2120b8d`。
