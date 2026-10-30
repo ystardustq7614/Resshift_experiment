@@ -355,6 +355,57 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(existing.read_bytes(), b"previous export")
             self.assertFalse((temp / "result.json").exists())
 
+    def test_full_and_zoom_plots_use_the_same_saved_sample(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temp = Path(temporary)
+            truth = np.linspace(-1, 1, 16 * 32).reshape(1, 16, 32).astype(np.float32)
+            prediction = truth * 0.8
+            noisy = truth + 0.2
+            for name, array in (("inputs", noisy), ("targets", truth), ("predictions", prediction)):
+                np.save(temp / f"{name}.npy", array)
+            result = temp / "result.json"
+            result.write_text(json.dumps({
+                "status": "completed", "split": "test", "num_samples": 1,
+                "prediction_shape": list(truth.shape), "inputs_path": "inputs.npy",
+                "targets_path": "targets.npy", "predictions_path": "predictions.npy",
+                "per_sample": [{"rmse": 0.1, "relative_l2": 0.2, "ssim": 0.9}],
+                "baseline_per_sample": [{"rmse": 0.2, "relative_l2": 0.4, "ssim": 0.8}],
+            }), encoding="utf-8")
+            output = temp / "figures"
+            args = ["visualize_das.py", "--results", str(result), "--output-dir", str(output),
+                    "--sample-rate", "400", "--zoom-time-samples", "4", "20"]
+            rendered = []
+            draw = visualization.comparison_figure
+
+            def capture(*positional, **keyword):
+                fig, limits = draw(*positional, **keyword)
+                rendered.append([ax.images[0] for ax in fig.axes if ax.images])
+                return fig, limits
+
+            with patch.object(sys, "argv", args), \
+                 patch.object(visualization, "comparison_figure", capture), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                visualization.main()
+            self.assertEqual(len(rendered), 2)
+            for suffix in ("", "_zoom_4_20"):
+                for extension in ("png", "pdf"):
+                    self.assertTrue((output / f"test_0000{suffix}.{extension}").is_file())
+            expected = (noisy, prediction, truth, np.abs(prediction.astype(float) - truth))
+            for full, zoom, array in zip(rendered[0], rendered[1], expected):
+                np.testing.assert_array_equal(full.get_array(), array[0].T)
+                np.testing.assert_array_equal(zoom.get_array(), array[0, :, 4:20].T)
+                np.testing.assert_allclose(zoom.get_extent(), (-0.5, 15.5, 19.5 / 400, 3.5 / 400))
+            record = json.loads((output / "plot_metadata.json").read_text(encoding="utf-8"))
+            self.assertEqual([row["view"] for row in record["figures"]], ["main", "zoom"])
+            self.assertEqual([row["time_samples"] for row in record["figures"]], [[0, 32], [4, 20]])
+            # 非法局部窗口不能在已经写完主图后才报错，避免留下半套图片。
+            invalid = temp / "invalid_figures"
+            args[args.index(str(output))] = str(invalid)
+            args[-1] = "99"
+            with patch.object(sys, "argv", args), self.assertRaises(ValueError):
+                visualization.main()
+            self.assertFalse(invalid.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

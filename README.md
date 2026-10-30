@@ -149,6 +149,21 @@ python visualize_das.py --data-dir /data2/user/zyq/datasets/das-v1/dataset \
 
 默认纵轴为采样点，避免从示意图猜测物理采样率。已知实际采样率时传 `--sample-rate <实际Hz>`，纵轴即可显示秒。可选 `--indices 0 6 12` 只绘制指定样本；`--time-samples 0 480` 只显示前480个时间采样点，图上指标仍对应完整样本。绘图参数保存在 `plot_metadata.json`。新版结果默认使用随目录同步的配对数组；也可用 `--data-dir` 和 `--predictions` 显式覆盖路径，两者必须来自同一次评估，脚本会校验形状与样本数。
 
+### 同时保存全图与局部纹理对比
+
+加 `--zoom-time-samples START STOP`，每个选中样本会额外生成同一窗口的四联图，保留所有通道。窗口为从0开始的采样点范围 `[START,STOP)`，不改变预测数组或重新运行模型。若实际采样率为400 Hz，参考图的1.00～2.20秒对应 `[400,880)`：
+
+```bash
+python visualize_das.py \
+  --results outputs/das_4gpu_test_gpu7/evaluation_results.json \
+  --output-dir outputs/das_4gpu_test_gpu7/figures_with_zoom \
+  --zoom-time-samples 400 880 --sample-rate 400
+```
+
+例如样本0会输出 `test_0000.png/.pdf`（全图）和 `test_0000_zoom_400_880.png/.pdf`（局部图）。局部图仍按 input、model prediction、ground truth、绝对误差排列；时间坐标保留原始位置。实际采样率未知时省略 `--sample-rate`，坐标显示采样点，不从参考图推断采样率。
+
+主图和局部图各自根据显示窗口计算色阶，图内前三幅仍共享同一振幅色阶；若需要全图和局部图也完全同色阶，可显式设置同一组 `--vmax` 和 `--error-vmax`。每幅图的窗口、色阶与文件路径写入 `plot_metadata.json`。原有 `--time-samples` 仍用于限制主图范围；不指定它时主图为完整样本。
+
 ```bash
 python -m unittest discover -s tests -p 'test_evaluate_das.py' -v
 ```

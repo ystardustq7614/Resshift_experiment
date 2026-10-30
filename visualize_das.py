@@ -120,6 +120,8 @@ def main():
     parser.add_argument("--sample-rate", type=float, help="实际采样率（Hz）；不指定时纵轴使用采样点，不猜测秒数。")
     parser.add_argument("--time-samples", type=int, nargs=2, metavar=("START", "STOP"),
                         help="可选时间采样点窗口 [START,STOP)，只影响绘图，指标仍是全长。")
+    parser.add_argument("--zoom-time-samples", type=int, nargs=2, metavar=("START", "STOP"),
+                        help="另外保存此时间窗口的局部图，保留主图；所有通道均保留。")
     parser.add_argument("--vmax", type=float, help="固定主信号组的对称色阶上限。")
     parser.add_argument("--noise-vmax", type=float, help="配对数据预览中真实噪声的对称色阶上限。")
     parser.add_argument("--error-vmax", type=float, help="绝对误差色阶上限，显示范围为 [0, error-vmax]。")
@@ -160,6 +162,14 @@ def main():
     indices = args.indices if args.indices is not None else list(range(len(clean)))
     if not indices or len(set(indices)) != len(indices) or any(i < 0 or i >= len(clean) for i in indices):
         raise ValueError("--indices 必须是有效且不重复的样本索引。")
+    windows = [(args.time_samples, "")]
+    if args.zoom_time_samples is not None:
+        start, stop = args.zoom_time_samples
+        windows.append((args.zoom_time_samples, f"_zoom_{start}_{stop}"))
+    for window, _ in windows:
+        if window is not None and not (0 <= window[0] < window[1] <= clean.shape[2]
+                                       and window[1] - window[0] >= 2):
+            raise ValueError("时间窗口必须是有效的 [START, STOP) 采样点范围，至少包含两点。")
     output = args.output_dir.resolve()
     if data_dir is not None and output.is_relative_to(data_dir):
         raise ValueError("图像输出目录不能位于源数据目录内部。")
@@ -170,7 +180,8 @@ def main():
         "inputs": str(input_path), "targets": str(target_path),
         "split": split, "mode": "model_predictions" if result else "paired_data_preview_only",
         "predictions": str(prediction_path) if prediction_path else None, "sample_rate_hz": args.sample_rate,
-        "time_samples": args.time_samples, "percentile": args.percentile, "vmax_scale": args.vmax_scale,
+        "time_samples": args.time_samples, "zoom_time_samples": args.zoom_time_samples,
+        "percentile": args.percentile, "vmax_scale": args.vmax_scale,
         "manual_vmax": {"main": args.vmax, "noise": args.noise_vmax, "error": args.error_vmax},
         "colormap": "RdBu_r",
         "normalization": "TwoSlopeNorm", "vcenter": 0.0,
@@ -188,18 +199,19 @@ def main():
     }
     # 先验证首图参数，再创建目录，避免参数错误留下空输出目录。
     progress = result.get("checkpoint_progress", {}).get("global_step", "unknown") if result else None
-    for count, i in enumerate(indices):
+    jobs = [(i, window, suffix) for i in indices for window, suffix in windows]
+    for count, (i, window, suffix) in enumerate(jobs):
         title = (f"{split}[{i}] | checkpoint updates: {progress} | full 15-step sampling" if result
                  else f"{split}[{i}] | PAIRED DATA PREVIEW ONLY - no model prediction")
-        if args.time_samples is not None:
-            title += f" | samples {args.time_samples[0]}:{args.time_samples[1]}"
+        if window is not None:
+            title += f" | samples {window[0]}:{window[1]}"
         footer = (f"Noisy: {metric_label(result['baseline_per_sample'][i])}\n"
                   f"Denoised: {metric_label(result['per_sample'][i])}") if result else ""
-        print(f"Rendering {split}[{i}] ...", flush=True)
+        print(f"Rendering {split}[{i}]{suffix} ...", flush=True)
         fig, limits = comparison_figure(
             noisy[i], clean[i], prediction[i] if prediction is not None else None,
             title=title, sample_rate=args.sample_rate, footer=footer,
-            time_samples=args.time_samples, vmax=args.vmax, noise_vmax=args.noise_vmax,
+            time_samples=window, vmax=args.vmax, noise_vmax=args.noise_vmax,
             error_vmax=args.error_vmax, percentile=args.percentile, vmax_scale=args.vmax_scale,
         )
         try:
@@ -207,12 +219,14 @@ def main():
                 output.mkdir(parents=True, exist_ok=False)
             saturation = {ax.get_title(): float(np.mean(np.abs(ax.images[0].get_array()) > ax.images[0].get_clim()[1]))
                           for ax in fig.axes if ax.images}
-            stem = output / f"{split}_{i:04d}"
+            stem = output / f"{split}_{i:04d}{suffix}"
             fig.savefig(stem.with_suffix(".png"), dpi=320)
             fig.savefig(stem.with_suffix(".pdf"))
         finally:
             plt.close(fig)
-        metadata["figures"].append({"sample_index": i, "vmax": limits["main"], "group_vmax": limits,
+        metadata["figures"].append({"sample_index": i, "view": "zoom" if suffix else "main",
+                                    "time_samples": list(window) if window is not None else [0, clean.shape[2]],
+                                    "vmax": limits["main"], "group_vmax": limits,
                                     "display_saturation_fraction": saturation,
                                     "stem": str(stem)})
         print(f"Wrote {stem}.png / .pdf", flush=True)
