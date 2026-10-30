@@ -83,7 +83,7 @@ python evaluate_das.py \
   --output outputs/das_4gpu_test/evaluation_results.json \
   --device cuda
 
-# 默认绘制全部测试样本，每个样本生成一张六面板 PNG 和 PDF。
+# 默认绘制全部测试样本，每个样本生成一张四联图 PNG 和 PDF。
 python visualize_das.py \
   --results outputs/das_4gpu_test/evaluation_results.json \
   --output-dir outputs/das_4gpu_test/figures
@@ -91,15 +91,63 @@ python visualize_das.py \
 
 `--checkpoint` 只接受自己生成且可信的训练 checkpoint，默认使用其中保存的模型/扩散配置。可选 `--config` 接受原始配置或 `resolved_config.json`，并校验与 checkpoint 一致。默认 FP32 推理以延续既有评估口径；显存不足可显式加 `--precision bf16`，结果记录实际精度。CPU 使用 `--device cpu --precision fp32`。默认不裁剪预测振幅、不重复归一化；`--clip-denoised` 会在采样中将 x0 截到 [-1,1]，只有确认数据范围适用时才开启。
 
-输出的 `evaluation_results.json` 包含 noisy 输入基线、去噪结果的总体和逐样本指标、checkpoint 进度、随机种子和采样配置。同目录的 `evaluation_results_predictions.npy` 为按原测试索引排列的 float32 `[N,128,4096]` 预测，约72 MiB（36个样本）。两者都拒绝覆盖旧文件；重跑请指定新的 `--output`。预测数组在运行中逐样本写入，只有 JSON 的 `status=completed` 才表示整次评估完成。已有旧版结果 JSON 没有预测数组，需要重新评估才能绘图。
+输出的 `evaluation_results.json` 包含 noisy 输入基线、去噪结果的总体和逐样本指标、checkpoint 进度、随机种子和采样配置。同目录自动保留四组 `[N,channel,time]` 数组，按原测试索引排列，不重新归一化：
+
+| 文件 | 内容 | dtype |
+| --- | --- | --- |
+| `evaluation_results_inputs.npy` | 实际评估的 input / noisy | float16，保持原数据精度 |
+| `evaluation_results_targets.npy` | ground truth / clean | float16，保持原数据精度 |
+| `evaluation_results_predictions.npy` | model prediction，完整15步采样结果 | float32 |
+| `evaluation_results_absolute_errors.npy` | `abs(prediction - ground_truth)` | float32 |
+
+36个完整128×4096样本共约216 MiB。所有输出均拒绝覆盖；重跑请指定新的 `--output`，例如 `outputs/das_4gpu_test_v2/evaluation_results.json`。数组在运行中逐样本写入，只有最终 JSON 的 `status=completed` 才表示整次评估完成；中断后保留的部分数组不应当作完整结果。
+
+**同步整个评估输出目录即可在本地处理和绘图，不需要 checkpoint、GPU 或服务器上的原数据目录。** JSON 中四组数组路径相对于 JSON 所在目录；原 checkpoint/data_dir 绝对路径仅用于追溯。修改 JSON 文件名时保留其引用的 NPY 文件名。没有保存预测的旧 JSON 无法还原预测波场，需要重新评估；已有预测和原配对数据的旧版结果仍可用 `--data-dir` / `--predictions` 显式指定。
+
+例如将服务器评估目录同步到本地 `outputs/downloaded_eval/` 后：
+
+```bash
+python visualize_das.py --results outputs/downloaded_eval/evaluation_results.json \
+  --output-dir outputs/downloaded_eval/figures --indices 0 1 2
+```
+
+本地也可以直接读取数组做后处理：
+
+```python
+import json
+from pathlib import Path
+import numpy as np
+
+root = Path("outputs/downloaded_eval")
+result = json.loads((root / "evaluation_results.json").read_text(encoding="utf-8"))
+inputs = np.load(root / result["inputs_path"], mmap_mode="r")
+prediction = np.load(root / result["predictions_path"], mmap_mode="r")
+truth = np.load(root / result["targets_path"], mmap_mode="r")
+error = np.load(root / result["absolute_errors_path"], mmap_mode="r")
+```
 
 - **RMSE**：`sqrt(sum((prediction-clean)^2)/元素数)`；全局先汇总平方误差，再开方，同时保留逐样本均值。
 - **相对 L2**：`||prediction-clean||₂ / ||clean||₂`；全局使用整个测试集的范数，同时保留逐样本均值。零能量 clean 的比值无定义，写为 JSON `null`，从逐样本相对 L2 均值中排除并记录有效样本数。
 - **SSIM**：直接在有符号的二维波场上计算，11×11 Gaussian、sigma=1.5、总体协方差、反射填充，包含边界像素后取均值。默认所有样本、noisy 与预测共用 `test_y` 全局 `max-min`；可用 `--ssim-data-range` 显式固定，跨 checkpoint 对比应使用相同范围。实现延续旧评估的边界口径，不能与裁掉边界的 SSIM 数值直接混比；指标采用 FP64 计算，旧版为 FP32，末位可能略有差异。[SSIM 参数参考](https://scikit-image.org/docs/0.24.x/api/skimage.metrics.html#skimage.metrics.structural_similarity)。
 
-图像与示例使用相同方向：横轴为相对通道，纵轴时间向下；红色正值、蓝色负值、白色零值。六面板依次是 clean、真实噪声、noisy、去噪预测、移除分量和预测误差。同一样本的面板共用由 clean 绝对值99.5百分位确定的对称色标；`--vmax` 可让不同样本也使用完全相同的色标。色标截色只影响显示，计算指标和保存数组不截幅、不平滑、不做逐图归一化。
+图像横轴为 Relative channel，默认纵轴为 Time sample，时间向下递增。预测图按 **input、model prediction、ground truth、error `|prediction-truth|`** 从左到右排列。前三图使用 Matplotlib 原生 `cmap="RdBu_r"`（深蓝负振幅、灰白零值、深红正振幅）和共享对称色阶；绝对误差图使用 `magma` 和独立的 `[0,error_vmax]` 色阶，不显示负值。不自定义颜色、饱和度或透明度；`interpolation="nearest"` 保留采样点的显示特征，输出320 DPI PNG及PDF。原有配对数据预览仍保留 clean、noisy、真实噪声三联图、完整通道和两个色条。
 
-默认纵轴为采样点，避免从示意图猜测物理采样率。已知实际采样率时传 `--sample-rate <实际Hz>`，纵轴即可显示秒。可选 `--indices 0 6 12` 只绘制指定样本；`--time-samples 0 480` 只显示前480个时间采样点，图上指标仍对应完整样本。绘图参数保存在 `plot_metadata.json`。跨机器绘图时可用 `--data-dir` 和 `--predictions` 指向拷回本地的原数据和预测数组；两者必须来自同一次评估，脚本会校验形状与样本数。
+配对数据预览中，clean 与 noisy 合并显示窗口的绝对振幅后取P99.5，统一使用对称色阶；真实噪声 x-y 独立取绝对值P99.5。默认 `--vmax-scale 1.00`，主信号和噪声均不额外放宽，P99.7仅在显式设置 `--percentile 99.7` 时使用。预测模式的主信号三图合并计算P99.5，共用一个 `TwoSlopeNorm(vmin=-vmax, vcenter=0.0, vmax=vmax)`；绝对误差独立计算P99.5，使用 `Normalize(vmin=0, vmax=error_vmax)`。对应色条直接使用图像的mappable，cmap与norm完全一致，不对单幅信号图独立归一化。
+
+分位数只在当前显示时间窗口内计算；为零时回退到该组最大绝对值，全零信号组使用安全范围[-1,1]，全零绝对误差使用[0,1]。`--vmax` 固定主信号上限，`--noise-vmax` 仅用于数据预览的噪声图，`--error-vmax` 固定绝对误差上限。元数据记录误差定义、各自色图、`group_vmax` 和 `display_saturation_fraction`（原始显示窗口内超过各面板色阶的采样点比例）。裁剪只限定显示色阶，不对原数组执行平滑、滤波或降采样，不改动模型输入与评估指标。
+
+没有 checkpoint 或预测数组时，也可以直接预览训练集的 clean、noisy、真实噪声三图。此模式明确标注 `PAIRED DATA PREVIEW ONLY`，不显示去噪预测，不计算模型指标：
+
+```bash
+python visualize_das.py --data-dir /data2/user/zyq/datasets/das-v1/dataset \
+  --split train --indices 0 1 2 --output-dir outputs/train_preview
+
+# 局部放大；坐标仍显示原始时间采样点。
+python visualize_das.py --data-dir /data2/user/zyq/datasets/das-v1/dataset \
+  --split train --indices 0 --time-samples 300 1800 --output-dir outputs/train_preview_zoom
+```
+
+默认纵轴为采样点，避免从示意图猜测物理采样率。已知实际采样率时传 `--sample-rate <实际Hz>`，纵轴即可显示秒。可选 `--indices 0 6 12` 只绘制指定样本；`--time-samples 0 480` 只显示前480个时间采样点，图上指标仍对应完整样本。绘图参数保存在 `plot_metadata.json`。新版结果默认使用随目录同步的配对数组；也可用 `--data-dir` 和 `--predictions` 显式覆盖路径，两者必须来自同一次评估，脚本会校验形状与样本数。
 
 ```bash
 python -m unittest discover -s tests -p 'test_evaluate_das.py' -v

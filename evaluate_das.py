@@ -149,11 +149,12 @@ def main():
             raise FileNotFoundError(f"文件不存在：{path}")
 
     output = Path(args.output).resolve()
-    predictions_path = output.with_name(output.stem + "_predictions.npy")
+    array_paths = {name: output.with_name(output.stem + f"_{name}.npy")
+                   for name in ("inputs", "targets", "predictions", "absolute_errors")}
     data_dir = Path(args.data_dir).resolve()
     if output.is_relative_to(data_dir):
         raise ValueError("评估输出不能位于源数据目录内部。")
-    for path in (output, predictions_path):
+    for path in (output, *array_paths.values()):
         if path.exists():
             raise FileExistsError(f"输出已存在，拒绝覆盖：{path}；请指定新的 --output。")
 
@@ -268,9 +269,12 @@ def main():
 
     window = make_gaussian_window(device)
     output.parent.mkdir(parents=True, exist_ok=True)
-    predictions = np.lib.format.open_memmap(
-        predictions_path, mode="w+", dtype=np.float32, shape=test_x.shape
-    )
+    saved_arrays = {
+        name: np.lib.format.open_memmap(
+            path, mode="w+", dtype=np.float16 if name in ("inputs", "targets") else np.float32,
+            shape=test_x.shape,
+        ) for name, path in array_paths.items()
+    }
     started = time.perf_counter()
 
     print(f"设备：{device}")
@@ -335,8 +339,13 @@ def main():
             metrics_i = calculate_metrics(pred, target, data_range, window)
             baseline_i = calculate_metrics(noisy, target, data_range, window)
             total_target_squared += float(target.double().square().sum().item())
-            predictions[i] = pred.cpu().numpy()[0, 0]
-            predictions.flush()
+            prediction = pred.cpu().numpy()[0, 0]
+            saved_arrays["inputs"][i] = test_x[i]
+            saved_arrays["targets"][i] = test_y[i]
+            saved_arrays["predictions"][i] = prediction
+            saved_arrays["absolute_errors"][i] = np.abs(prediction - test_y[i].astype(np.float32))
+            for array in saved_arrays.values():
+                array.flush()
             per_sample.append({"sample_index": i, **metrics_i})
             baseline_per_sample.append({"sample_index": i, **baseline_i})
 
@@ -347,7 +356,7 @@ def main():
                     flush=True,
                 )
 
-    del predictions
+    del array, saved_arrays
     elements_per_sample = int(np.prod(test_y.shape[1:]))
     metrics = summarize_metrics(per_sample, total_target_squared, elements_per_sample)
     baseline_metrics = summarize_metrics(baseline_per_sample, total_target_squared, elements_per_sample)
@@ -367,7 +376,12 @@ def main():
         "elapsed_seconds": time.perf_counter() - started,
         "split": "test",
         "num_samples": n_samples,
-        "predictions_path": str(predictions_path),
+        # 同目录相对路径，整目录同步后无需修改服务器绝对路径。
+        **{f"{name}_path": path.name for name, path in array_paths.items()},
+        "array_layout": "[sample, channel, time]; original test index order",
+        "array_dtypes": {"inputs": "float16", "targets": "float16",
+                         "predictions": "float32", "absolute_errors": "float32"},
+        "absolute_error_definition": "abs(prediction - ground_truth), float32, no clipping or rescaling",
         "prediction_shape": list(test_x.shape),
         "prediction_dtype": "float32",
         "prediction_method": "diffusion.p_sample_loop",
@@ -404,6 +418,7 @@ def main():
     print(f"SSIM（逐样本平均）：{metrics['ssim_mean_per_sample']:.8g}")
     print(f"Noisy 基线：{baseline_metrics}")
     print(f"\n详细结果已保存到：{os.path.abspath(args.output)}")
+    print(f"同步整个结果目录即可本地处理和绘图：{output.parent}")
 
 
 if __name__ == "__main__":

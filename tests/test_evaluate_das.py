@@ -97,20 +97,154 @@ class EvaluationTests(unittest.TestCase):
     def test_plot_orientation_scale_and_window_do_not_change_arrays(self):
         clean = np.arange(16 * 32, dtype=np.float32).reshape(16, 32) / 100
         original = clean.copy()
-        fig, limit = visualization.comparison_figure(
+        fig, limits = visualization.comparison_figure(
             clean + 0.2, clean, clean * 0.9, title="Layout test", sample_rate=400,
-            time_samples=(4, 20), vmax=0.5,
+            time_samples=(4, 20), vmax=0.5, noise_vmax=0.25, error_vmax=0.05,
         )
         try:
-            self.assertEqual(limit, 0.5)
-            for ax in fig.axes[:6]:
-                self.assertEqual(ax.images[0].get_clim(), (-0.5, 0.5))
+            self.assertEqual(limits, {"main": 0.5, "error": 0.05})
+            for position in (0.0, 0.25, 0.75, 1.0):
+                np.testing.assert_allclose(fig.axes[0].images[0].get_cmap()(position),
+                                           plt.get_cmap("RdBu_r")(position))
+            images = [ax.images[0] for ax in fig.axes if ax.images]
+            self.assertEqual(len(images), 4)
+            for image in images[:3]:
+                self.assertEqual(image.get_clim(), (-0.5, 0.5))
+                self.assertEqual(image.get_cmap().name, "RdBu_r")
+                self.assertIs(image.norm, images[0].norm)
+            self.assertEqual(images[3].get_clim(), (0, 0.05))
+            self.assertEqual(images[3].get_cmap().name, "magma")
+            self.assertEqual(images[3].colorbar.get_ticks().tolist(), [0, 0.025, 0.05])
+            for image in images:
+                ax = image.axes
+                self.assertEqual(ax.images[0].get_interpolation(), "nearest")
+                self.assertEqual(ax.images[0].get_interpolation_stage(), "data")
                 self.assertGreater(ax.get_ylim()[0], ax.get_ylim()[1])
-            np.testing.assert_array_equal(fig.axes[0].images[0].get_array(), clean[:, 4:20].T)
+            expected = (clean + 0.2, clean * 0.9, clean)
+            for image, array in zip(images[:3], expected):
+                np.testing.assert_array_equal(image.get_array(), array[:, 4:20].T)
+            np.testing.assert_array_equal(images[3].get_array(),
+                                         np.abs((clean * 0.9).astype(float) - clean)[:, 4:20].T)
             np.testing.assert_allclose(fig.axes[0].images[0].get_extent(), (-0.5, 15.5, 19.5 / 400, 3.5 / 400))
             np.testing.assert_array_equal(clean, original)
+            fig.canvas.draw()
+            title_box = fig._suptitle.get_window_extent(fig.canvas.get_renderer())
+            self.assertLessEqual(title_box.y1, fig.bbox.y1)
+            self.assertGreaterEqual(title_box.y0, 0)
         finally:
             plt.close(fig)
+
+    def test_group_percentiles_pool_arrays_and_reject_outlier_dominance(self):
+        clean = np.linspace(-1, 1, 128 * 32).reshape(128, 32)
+        noisy = clean * 1.2
+        noisy[0, 0] = 1e5
+        prediction = clean * 0.9
+        originals = [a.copy() for a in (noisy, clean, prediction)]
+        fig, limits = visualization.comparison_figure(noisy, clean, prediction, title="Group scales")
+        try:
+            expected_main = np.percentile(np.concatenate([np.abs(a).ravel() for a in originals]), 99.5)
+            self.assertAlmostEqual(limits["main"], expected_main)
+            self.assertAlmostEqual(limits["error"], np.percentile(np.abs(prediction - clean), 99.5))
+            self.assertLess(limits["main"], 2)
+            self.assertLess(limits["error"], limits["main"])
+            self.assertIn("independent", fig.axes[5].get_xlabel())
+            error_image = fig.axes[3].images[0]
+            np.testing.assert_array_equal(error_image.get_array(), np.abs(prediction - clean).T)
+            self.assertTrue(np.all(error_image.get_array() >= 0))
+            for actual, original in zip((noisy, clean, prediction), originals):
+                np.testing.assert_array_equal(actual, original)
+        finally:
+            plt.close(fig)
+
+    def test_color_limit_headroom_reduces_saturation_and_preserves_manual_limits(self):
+        array = np.linspace(-2, 2, 10000)
+        original = visualization.symmetric_limit((array,), 99.5)
+        padded = visualization.symmetric_limit((array,), 99.5, scale=1.15)
+        self.assertAlmostEqual(padded, 1.15 * original)
+        self.assertLess(np.mean(np.abs(array) > padded), np.mean(np.abs(array) > original))
+        self.assertEqual(visualization.symmetric_limit((array,), 99.5, manual=3, scale=1.15), 3)
+        self.assertAlmostEqual(visualization.symmetric_limit((array,), 99.8), np.percentile(np.abs(array), 99.8))
+        for invalid in (0, -1, float("nan"), float("inf")):
+            with self.assertRaises(ValueError):
+                visualization.symmetric_limit((array,), 99.5, scale=invalid)
+
+    def test_rdbu_preview_keeps_all_channels_exact_samples_and_shared_colorbars(self):
+        rng = np.random.default_rng(12)
+        clean = rng.normal(0, 0.2, (128, 4096)).astype(np.float32)
+        noisy = clean + rng.normal(0, 0.1, clean.shape).astype(np.float32)
+        before = (clean.copy(), noisy.copy())
+        y = clean[:, 300:1800].astype(np.float64)
+        x = noisy[:, 300:1800].astype(np.float64)
+        noise = x - y
+        expected_main = np.percentile(np.abs(np.concatenate([y.ravel(), x.ravel()])), 99.5)
+        expected_noise = np.percentile(np.abs(noise.ravel()), 99.5)
+        fig, limits = visualization.comparison_figure(noisy, clean, None,
+                                                     title="Classic preview", time_samples=(300, 1800))
+        try:
+            images = [ax.images[0] for ax in fig.axes if ax.images]
+            self.assertEqual(len(images), 3)
+            self.assertEqual(limits, {"main": expected_main, "noise": expected_noise})
+            for im, expected in zip(images, (y, x, noise)):
+                self.assertEqual(im.get_array().shape, (1500, 128))
+                np.testing.assert_array_equal(im.get_array(), expected.T)
+                self.assertEqual(im.get_cmap().name, "RdBu_r")
+                self.assertEqual(im.get_interpolation(), "nearest")
+                self.assertEqual(im.origin, "upper")
+                np.testing.assert_array_equal(im.axes.get_xlim(), (-0.5, 127.5))
+                np.testing.assert_array_equal(im.axes.get_ylim(), (1799.5, 299.5))
+            for im, limit in zip(images, (expected_main, expected_main, expected_noise)):
+                self.assertEqual(im.get_clim(), (-limit, limit))
+                self.assertIsInstance(im.norm, visualization.TwoSlopeNorm)
+                self.assertEqual(im.norm.vcenter, 0.0)
+                np.testing.assert_array_equal(im.norm([-limit, 0, limit]), [0, 0.5, 1])
+                self.assertIsNone(im.get_alpha())
+            self.assertIs(images[0].norm, images[1].norm)
+            self.assertIsNot(images[0].norm, images[2].norm)
+            for im, limit in ((images[1], expected_main), (images[2], expected_noise)):
+                self.assertIs(im.colorbar.mappable, im)
+                self.assertIs(im.colorbar.norm, im.norm)
+                self.assertIs(im.colorbar.cmap, im.get_cmap())
+                np.testing.assert_array_equal(im.colorbar.get_ticks(), [-limit, 0, limit])
+                self.assertEqual((im.colorbar.vmin, im.colorbar.vmax), (-limit, limit))
+            np.testing.assert_array_equal(clean, before[0])
+            np.testing.assert_array_equal(noisy, before[1])
+        finally:
+            plt.close(fig)
+
+    def test_zero_preview_has_finite_scales_and_no_prediction_panel(self):
+        zeros = np.zeros((16, 32))
+        fig, limits = visualization.comparison_figure(zeros, zeros, None, title="Data preview only")
+        try:
+            self.assertEqual(limits, {"main": 1.0, "noise": 1.0})
+            self.assertEqual(sum(bool(ax.images) for ax in fig.axes), 3)
+            self.assertFalse(any("Denoised" in ax.get_title() for ax in fig.axes))
+        finally:
+            plt.close(fig)
+
+    def test_training_data_preview_cli_needs_no_model_or_evaluation_json(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temp = Path(temporary)
+            data = temp / "data"
+            data.mkdir()
+            clean = np.linspace(-1, 1, 16 * 32).reshape(1, 16, 32).astype(np.float16)
+            np.save(data / "train_y.npy", clean)
+            np.save(data / "train_x.npy", clean + np.float16(0.1))
+            output = temp / "preview"
+            with patch.object(sys, "argv", ["visualize_das.py", "--data-dir", str(data),
+                                           "--split", "train", "--indices", "0", "--output-dir", str(output)]), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                visualization.main()
+            record = json.loads((output / "plot_metadata.json").read_text(encoding="utf-8"))
+            self.assertEqual(record["mode"], "paired_data_preview_only")
+            self.assertIsNone(record["predictions"])
+            self.assertEqual(record["colormap"], "RdBu_r")
+            self.assertEqual(record["normalization"], "TwoSlopeNorm")
+            self.assertEqual(record["vcenter"], 0.0)
+            self.assertEqual(record["interpolation"], "nearest")
+            self.assertEqual(record["vmax_scale"], 1.0)
+            self.assertEqual(record["zero_color"], visualization.matplotlib.colors.to_hex(plt.get_cmap("RdBu_r")(0.5)))
+            self.assertNotIn("error", record["figures"][0]["group_vmax"])
+            self.assertTrue((output / "train_0000.png").is_file())
 
     def test_real_15_step_sampling_metrics_saved_predictions_and_plot_cli(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -146,12 +280,19 @@ class EvaluationTests(unittest.TestCase):
                     evaluation.main()
                 self.assertEqual(reverse_step.call_count, 30)
             result = json.loads(output.read_text(encoding="utf-8"))
-            prediction = np.load(result["predictions_path"])
+            prediction = np.load(output.parent / result["predictions_path"])
             self.assertEqual(result["status"], "completed")
             self.assertEqual(prediction.dtype, np.float32)
             self.assertEqual(prediction.shape, truth.shape)
             self.assertGreater(float(prediction.max()), 1)
             self.assertFalse(result["clip_denoised"])
+            np.testing.assert_array_equal(np.load(output.parent / result["inputs_path"]), noisy)
+            np.testing.assert_array_equal(np.load(output.parent / result["targets_path"]), truth)
+            error = np.load(output.parent / result["absolute_errors_path"])
+            self.assertEqual(error.dtype, np.float32)
+            np.testing.assert_array_equal(error, np.abs(prediction - truth.astype(np.float32)))
+            for key in ("inputs_path", "targets_path", "predictions_path", "absolute_errors_path"):
+                self.assertFalse(Path(result[key]).is_absolute())
             self.assertAlmostEqual(result["metrics"]["rmse_global"],
                                    np.sqrt(np.mean((prediction.astype(float) - truth) ** 2)), places=12)
             self.assertAlmostEqual(result["baseline_metrics"]["relative_l2_global"],
@@ -163,7 +304,9 @@ class EvaluationTests(unittest.TestCase):
             with patch.object(sys, "argv", base_args + ["--output", str(second)]), contextlib.redirect_stdout(io.StringIO()):
                 evaluation.main()
             second_result = json.loads(second.read_text(encoding="utf-8"))
-            np.testing.assert_array_equal(prediction, np.load(second_result["predictions_path"]))
+            np.testing.assert_array_equal(prediction, np.load(second.parent / second_result["predictions_path"]))
+            # 标签改变后，原次评估的快照仍保持不变。
+            np.testing.assert_array_equal(np.load(output.parent / result["targets_path"]), truth)
             np.save(data / "test_y.npy", truth)
 
             with patch.object(sys, "argv", base_args + ["--output", str(output)]):
@@ -177,7 +320,12 @@ class EvaluationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "checkpoint"):
                     evaluation.main()
 
-            figures = temp / "figures"
+            # 模拟同步到另一台机器：原数据路径和原结果路径都不再可用。
+            data.rename(temp / "unavailable_data")
+            downloaded = temp / "downloaded"
+            output.parent.rename(downloaded)
+            output = downloaded / output.name
+            figures = downloaded / "figures"
             with patch.object(sys, "argv", ["visualize_das.py", "--results", str(output),
                                            "--output-dir", str(figures), "--indices", "1"]), \
                  contextlib.redirect_stdout(io.StringIO()):
@@ -186,6 +334,26 @@ class EvaluationTests(unittest.TestCase):
             self.assertTrue((figures / "test_0001.pdf").is_file())
             metadata = json.loads((figures / "plot_metadata.json").read_text(encoding="utf-8"))
             self.assertEqual(metadata["figures"][0]["sample_index"], 1)
+            self.assertEqual(metadata["error_definition"], "abs(prediction - ground_truth)")
+            self.assertIn("1x4", metadata["layout"])
+            self.assertIsNone(metadata["data_dir"])
+
+    def test_orphan_export_file_is_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temp = Path(temporary)
+            checkpoint = temp / "checkpoint.pt"
+            checkpoint.touch()
+            existing = temp / "result_targets.npy"
+            existing.write_bytes(b"previous export")
+            with patch.object(sys, "argv", ["evaluate_das.py", "--checkpoint", str(checkpoint),
+                                           "--data-dir", str(temp / "data"), "--device", "cpu",
+                                           "--output", str(temp / "result.json")]), \
+                 patch("evaluate_das.torch.load") as load:
+                with self.assertRaises(FileExistsError):
+                    evaluation.main()
+                load.assert_not_called()
+            self.assertEqual(existing.read_bytes(), b"previous export")
+            self.assertFalse((temp / "result.json").exists())
 
 
 if __name__ == "__main__":
