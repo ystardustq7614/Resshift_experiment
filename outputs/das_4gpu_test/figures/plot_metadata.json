@@ -1,0 +1,194 @@
+{
+  "results": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/evaluation_results.json",
+  "data_dir": "/data2/user/zyq/datasets/das-v1/dataset",
+  "predictions": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/evaluation_results_predictions.npy",
+  "sample_rate_hz": null,
+  "time_samples": null,
+  "percentile": 99.5,
+  "manual_vmax": null,
+  "colormap": "RdBu_r (red positive, blue negative)",
+  "layout": "2x3; channel horizontal, time downward; shared symmetric scale per sample",
+  "metric_scope": "full sample, independent of display window and color clipping",
+  "figures": [
+    {
+      "sample_index": 0,
+      "vmax": 0.75146484375,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0000"
+    },
+    {
+      "sample_index": 1,
+      "vmax": 0.85302734375,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0001"
+    },
+    {
+      "sample_index": 2,
+      "vmax": 0.92919921875,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0002"
+    },
+    {
+      "sample_index": 3,
+      "vmax": 0.9443359375,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0003"
+    },
+    {
+      "sample_index": 4,
+      "vmax": 0.9853515625,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0004"
+    },
+    {
+      "sample_index": 5,
+      "vmax": 0.9951171875,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0005"
+    },
+    {
+      "sample_index": 6,
+      "vmax": 0.697265625,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0006"
+    },
+    {
+      "sample_index": 7,
+      "vmax": 0.78076171875,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0007"
+    },
+    {
+      "sample_index": 8,
+      "vmax": 0.9375,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0008"
+    },
+    {
+      "sample_index": 9,
+      "vmax": 0.9524243164062511,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0009"
+    },
+    {
+      "sample_index": 10,
+      "vmax": 0.9912109375,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0010"
+    },
+    {
+      "sample_index": 11,
+      "vmax": 0.9988110351562511,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0011"
+    },
+    {
+      "sample_index": 12,
+      "vmax": 0.47816528320312557,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0012"
+    },
+    {
+      "sample_index": 13,
+      "vmax": 0.81298828125,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0013"
+    },
+    {
+      "sample_index": 14,
+      "vmax": 0.921875,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0014"
+    },
+    {
+      "sample_index": 15,
+      "vmax": 0.94970703125,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0015"
+    },
+    {
+      "sample_index": 16,
+      "vmax": 0.99462890625,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0016"
+    },
+    {
+      "sample_index": 17,
+      "vmax": 0.9978344726562511,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0017"
+    },
+    {
+      "sample_index": 18,
+      "vmax": 0.68896484375,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0018"
+    },
+    {
+      "sample_index": 19,
+      "vmax": 0.8249829101562511,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0019"
+    },
+    {
+      "sample_index": 20,
+      "vmax": 0.93359375,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0020"
+    },
+    {
+      "sample_index": 21,
+      "vmax": 0.96533203125,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0021"
+    },
+    {
+      "sample_index": 22,
+      "vmax": 0.9931640625,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0022"
+    },
+    {
+      "sample_index": 23,
+      "vmax": 0.9951171875,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0023"
+    },
+    {
+      "sample_index": 24,
+      "vmax": 0.71484375,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0024"
+    },
+    {
+      "sample_index": 25,
+      "vmax": 0.85302734375,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0025"
+    },
+    {
+      "sample_index": 26,
+      "vmax": 0.93359375,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0026"
+    },
+    {
+      "sample_index": 27,
+      "vmax": 0.9765625,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0027"
+    },
+    {
+      "sample_index": 28,
+      "vmax": 0.98828125,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0028"
+    },
+    {
+      "sample_index": 29,
+      "vmax": 0.9905102539062511,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0029"
+    },
+    {
+      "sample_index": 30,
+      "vmax": 0.7004711914062511,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0030"
+    },
+    {
+      "sample_index": 31,
+      "vmax": 0.8232421875,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0031"
+    },
+    {
+      "sample_index": 32,
+      "vmax": 0.9111328125,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0032"
+    },
+    {
+      "sample_index": 33,
+      "vmax": 0.9599609375,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0033"
+    },
+    {
+      "sample_index": 34,
+      "vmax": 0.9826977539062511,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0034"
+    },
+    {
+      "sample_index": 35,
+      "vmax": 0.9970703125,
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test/figures/test_0035"
+    }
+  ]
+}

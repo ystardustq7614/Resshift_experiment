@@ -1,0 +1,1477 @@
+{
+  "results": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/evaluation_results.json",
+  "data_dir": null,
+  "inputs": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/evaluation_results_inputs.npy",
+  "targets": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/evaluation_results_targets.npy",
+  "split": "test",
+  "mode": "model_predictions",
+  "predictions": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/evaluation_results_predictions.npy",
+  "sample_rate_hz": 400.0,
+  "time_samples": null,
+  "zoom_time_samples": [
+    400,
+    880
+  ],
+  "percentile": 99.5,
+  "vmax_scale": 1.0,
+  "manual_vmax": {
+    "main": null,
+    "noise": null,
+    "error": null
+  },
+  "colormap": "RdBu_r",
+  "normalization": "TwoSlopeNorm",
+  "vcenter": 0.0,
+  "error_colormap": "magma",
+  "error_normalization": "Normalize(vmin=0, vmax=error_limit)",
+  "error_definition": "abs(prediction - ground_truth)",
+  "zero_color": "#f7f6f6",
+  "interpolation": "nearest",
+  "interpolation_stage": "data",
+  "dpi": 320,
+  "color_limit_scope": "pooled absolute amplitudes within displayed time window, per group; percentile times vmax_scale unless manually set",
+  "layout": "1x4: input/model prediction/ground truth/absolute error; shared signal and separate error colorbars",
+  "metric_scope": "full sample",
+  "figures": [
+    {
+      "sample_index": 0,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.87548828125,
+      "group_vmax": {
+        "main": 0.87548828125,
+        "error": 0.2736314075440169
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.009450912475585938,
+        "(b) Model prediction": 0.002605438232421875,
+        "(c) Ground truth": 0.0029315948486328125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0000"
+    },
+    {
+      "sample_index": 0,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.2777326917648304,
+      "group_vmax": {
+        "main": 1.2777326917648304,
+        "error": 0.3919489459693432
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.007242838541666667,
+        "(b) Model prediction": 0.003727213541666667,
+        "(c) Ground truth": 0.004036458333333334,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0000_zoom_400_880"
+    },
+    {
+      "sample_index": 1,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.91064453125,
+      "group_vmax": {
+        "main": 0.91064453125,
+        "error": 0.25729013293981556
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.007862091064453125,
+        "(b) Model prediction": 0.003574371337890625,
+        "(c) Ground truth": 0.0035552978515625,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0001"
+    },
+    {
+      "sample_index": 1,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.2421875,
+      "group_vmax": {
+        "main": 1.2421875,
+        "error": 0.26151649609208105
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.00634765625,
+        "(b) Model prediction": 0.004280598958333334,
+        "(c) Ground truth": 0.004361979166666667,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0001_zoom_400_880"
+    },
+    {
+      "sample_index": 2,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.94921875,
+      "group_vmax": {
+        "main": 0.94921875,
+        "error": 0.15755535159260037
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.00616455078125,
+        "(b) Model prediction": 0.0042362213134765625,
+        "(c) Ground truth": 0.0045833587646484375,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0002"
+    },
+    {
+      "sample_index": 2,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.3984375,
+      "group_vmax": {
+        "main": 1.3984375,
+        "error": 0.20021486669778824
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.00546875,
+        "(b) Model prediction": 0.004427083333333333,
+        "(c) Ground truth": 0.005029296875,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0002_zoom_400_880"
+    },
+    {
+      "sample_index": 3,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9618742144107882,
+      "group_vmax": {
+        "main": 0.9618742144107882,
+        "error": 0.17428686872124674
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.006069183349609375,
+        "(b) Model prediction": 0.004367828369140625,
+        "(c) Ground truth": 0.0045642852783203125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0003"
+    },
+    {
+      "sample_index": 3,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.2169000488519666,
+      "group_vmax": {
+        "main": 1.2169000488519666,
+        "error": 0.1985324144363404
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005891927083333333,
+        "(b) Model prediction": 0.004557291666666667,
+        "(c) Ground truth": 0.004557291666666667,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0003_zoom_400_880"
+    },
+    {
+      "sample_index": 4,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9892578125,
+      "group_vmax": {
+        "main": 0.9892578125,
+        "error": 0.10042529385536911
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005199432373046875,
+        "(b) Model prediction": 0.004871368408203125,
+        "(c) Ground truth": 0.00492095947265625,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0004"
+    },
+    {
+      "sample_index": 4,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.5726335239410396,
+      "group_vmax": {
+        "main": 1.5726335239410396,
+        "error": 0.14242999386042363
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0050618489583333336,
+        "(b) Model prediction": 0.004850260416666667,
+        "(c) Ground truth": 0.005094401041666667,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0004_zoom_400_880"
+    },
+    {
+      "sample_index": 5,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9990234375,
+      "group_vmax": {
+        "main": 0.9990234375,
+        "error": 0.06731730047613382
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0050296783447265625,
+        "(b) Model prediction": 0.0050525665283203125,
+        "(c) Ground truth": 0.0049037933349609375,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0005"
+    },
+    {
+      "sample_index": 5,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.279296875,
+      "group_vmax": {
+        "main": 1.279296875,
+        "error": 0.08649840459227563
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005240885416666666,
+        "(b) Model prediction": 0.00498046875,
+        "(c) Ground truth": 0.004768880208333334,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0005_zoom_400_880"
+    },
+    {
+      "sample_index": 6,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.8486328125,
+      "group_vmax": {
+        "main": 0.8486328125,
+        "error": 0.2557350745797157
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.010358810424804688,
+        "(b) Model prediction": 0.002376556396484375,
+        "(c) Ground truth": 0.002246856689453125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0006"
+    },
+    {
+      "sample_index": 6,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.1240234375,
+      "group_vmax": {
+        "main": 1.1240234375,
+        "error": 0.4342573349177838
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.006819661458333333,
+        "(b) Model prediction": 0.004052734375,
+        "(c) Ground truth": 0.004036458333333334,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0006_zoom_400_880"
+    },
+    {
+      "sample_index": 7,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.8759765625,
+      "group_vmax": {
+        "main": 0.8759765625,
+        "error": 0.27405259363353257
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.009212493896484375,
+        "(b) Model prediction": 0.0031032562255859375,
+        "(c) Ground truth": 0.002666473388671875,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0007"
+    },
+    {
+      "sample_index": 7,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.1410711514949787,
+      "group_vmax": {
+        "main": 1.1410711514949787,
+        "error": 0.4350183029472829
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.008138020833333334,
+        "(b) Model prediction": 0.00390625,
+        "(c) Ground truth": 0.0029622395833333332,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0007_zoom_400_880"
+    },
+    {
+      "sample_index": 8,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9581875526905076,
+      "group_vmax": {
+        "main": 0.9581875526905076,
+        "error": 0.19444231413304808
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.00594329833984375,
+        "(b) Model prediction": 0.00446319580078125,
+        "(c) Ground truth": 0.0045948028564453125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0008"
+    },
+    {
+      "sample_index": 8,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.4970411604642868,
+      "group_vmax": {
+        "main": 1.4970411604642868,
+        "error": 0.2584912080690265
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005777994791666667,
+        "(b) Model prediction": 0.0045735677083333336,
+        "(c) Ground truth": 0.004654947916666667,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0008_zoom_400_880"
+    },
+    {
+      "sample_index": 9,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9716796875,
+      "group_vmax": {
+        "main": 0.9716796875,
+        "error": 0.16482575200498106
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0056247711181640625,
+        "(b) Model prediction": 0.0047435760498046875,
+        "(c) Ground truth": 0.0046234130859375,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0009"
+    },
+    {
+      "sample_index": 9,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.470703125,
+      "group_vmax": {
+        "main": 1.470703125,
+        "error": 0.22550670348107818
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005289713541666667,
+        "(b) Model prediction": 0.004899088541666667,
+        "(c) Ground truth": 0.004801432291666667,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0009_zoom_400_880"
+    },
+    {
+      "sample_index": 10,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.99365234375,
+      "group_vmax": {
+        "main": 0.99365234375,
+        "error": 0.10239497386850417
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005138397216796875,
+        "(b) Model prediction": 0.0049076080322265625,
+        "(c) Ground truth": 0.0049457550048828125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0010"
+    },
+    {
+      "sample_index": 10,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.5873095703124989,
+      "group_vmax": {
+        "main": 1.5873095703124989,
+        "error": 0.14696483675390482
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005159505208333333,
+        "(b) Model prediction": 0.004931640625,
+        "(c) Ground truth": 0.004915364583333333,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0010_zoom_400_880"
+    },
+    {
+      "sample_index": 11,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 1.0048828125,
+      "group_vmax": {
+        "main": 1.0048828125,
+        "error": 0.08161448329687125
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.004909515380859375,
+        "(b) Model prediction": 0.005191802978515625,
+        "(c) Ground truth": 0.0048694610595703125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0011"
+    },
+    {
+      "sample_index": 11,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.5702359670400619,
+      "group_vmax": {
+        "main": 1.5702359670400619,
+        "error": 0.10473730921745301
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.004996744791666666,
+        "(b) Model prediction": 0.005110677083333333,
+        "(c) Ground truth": 0.004899088541666667,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0011_zoom_400_880"
+    },
+    {
+      "sample_index": 12,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.662109375,
+      "group_vmax": {
+        "main": 0.662109375,
+        "error": 0.33922005236148844
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.01137542724609375,
+        "(b) Model prediction": 0.0025463104248046875,
+        "(c) Ground truth": 0.0010776519775390625,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0012"
+    },
+    {
+      "sample_index": 12,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.1748046875,
+      "group_vmax": {
+        "main": 1.1748046875,
+        "error": 0.6552280935645104
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.014567057291666666,
+        "(b) Model prediction": 0.0003255208333333333,
+        "(c) Ground truth": 6.510416666666667e-05,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0012_zoom_400_880"
+    },
+    {
+      "sample_index": 13,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.8960106289386761,
+      "group_vmax": {
+        "main": 0.8960106289386761,
+        "error": 0.2602957256510854
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.008640289306640625,
+        "(b) Model prediction": 0.0033512115478515625,
+        "(c) Ground truth": 0.003009796142578125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0013"
+    },
+    {
+      "sample_index": 13,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.1142578125,
+      "group_vmax": {
+        "main": 1.1142578125,
+        "error": 0.32903206720948225
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0087890625,
+        "(b) Model prediction": 0.003564453125,
+        "(c) Ground truth": 0.0026041666666666665,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0013_zoom_400_880"
+    },
+    {
+      "sample_index": 14,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9548014539480241,
+      "group_vmax": {
+        "main": 0.9548014539480241,
+        "error": 0.18323694128543144
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005970001220703125,
+        "(b) Model prediction": 0.0046367645263671875,
+        "(c) Ground truth": 0.00439453125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0014"
+    },
+    {
+      "sample_index": 14,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.49609375,
+      "group_vmax": {
+        "main": 1.49609375,
+        "error": 0.25680559515953066
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0056640625,
+        "(b) Model prediction": 0.0048177083333333336,
+        "(c) Ground truth": 0.004508463541666666,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0014_zoom_400_880"
+    },
+    {
+      "sample_index": 15,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.96533203125,
+      "group_vmax": {
+        "main": 0.96533203125,
+        "error": 0.1443691336736084
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005764007568359375,
+        "(b) Model prediction": 0.004611968994140625,
+        "(c) Ground truth": 0.004608154296875,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0015"
+    },
+    {
+      "sample_index": 15,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.4115605223178853,
+      "group_vmax": {
+        "main": 1.4115605223178853,
+        "error": 0.15160967194475236
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005208333333333333,
+        "(b) Model prediction": 0.004801432291666667,
+        "(c) Ground truth": 0.004996744791666666,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0015_zoom_400_880"
+    },
+    {
+      "sample_index": 16,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9912109375,
+      "group_vmax": {
+        "main": 0.9912109375,
+        "error": 0.08365840516984463
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0052051544189453125,
+        "(b) Model prediction": 0.0047016143798828125,
+        "(c) Ground truth": 0.0050754547119140625,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0016"
+    },
+    {
+      "sample_index": 16,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.4326171875,
+      "group_vmax": {
+        "main": 1.4326171875,
+        "error": 0.10506280958652499
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005257161458333334,
+        "(b) Model prediction": 0.0044921875,
+        "(c) Ground truth": 0.005224609375,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0016_zoom_400_880"
+    },
+    {
+      "sample_index": 17,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 1.0015868943929684,
+      "group_vmax": {
+        "main": 1.0015868943929684,
+        "error": 0.06893705096095804
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.00496673583984375,
+        "(b) Model prediction": 0.0051097869873046875,
+        "(c) Ground truth": 0.004924774169921875,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0017"
+    },
+    {
+      "sample_index": 17,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.322265625,
+      "group_vmax": {
+        "main": 1.322265625,
+        "error": 0.08055632784962656
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.004964192708333333,
+        "(b) Model prediction": 0.005257161458333334,
+        "(c) Ground truth": 0.004720052083333333,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0017_zoom_400_880"
+    },
+    {
+      "sample_index": 18,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.82080078125,
+      "group_vmax": {
+        "main": 0.82080078125,
+        "error": 0.215891202762723
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.010290145874023438,
+        "(b) Model prediction": 0.0024433135986328125,
+        "(c) Ground truth": 0.00225830078125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0018"
+    },
+    {
+      "sample_index": 18,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.11328125,
+      "group_vmax": {
+        "main": 1.11328125,
+        "error": 0.2718707562983036
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.00859375,
+        "(b) Model prediction": 0.0035807291666666665,
+        "(c) Ground truth": 0.0028157552083333333,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0018_zoom_400_880"
+    },
+    {
+      "sample_index": 19,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9052734375,
+      "group_vmax": {
+        "main": 0.9052734375,
+        "error": 0.20886226825416088
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0078887939453125,
+        "(b) Model prediction": 0.0036754608154296875,
+        "(c) Ground truth": 0.00342559814453125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0019"
+    },
+    {
+      "sample_index": 19,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.3361531573534011,
+      "group_vmax": {
+        "main": 1.3361531573534011,
+        "error": 0.2658067230135203
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.006396484375,
+        "(b) Model prediction": 0.004443359375,
+        "(c) Ground truth": 0.004166666666666667,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0019_zoom_400_880"
+    },
+    {
+      "sample_index": 20,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9559534651041119,
+      "group_vmax": {
+        "main": 0.9559534651041119,
+        "error": 0.16318352341651918
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0059337615966796875,
+        "(b) Model prediction": 0.00444793701171875,
+        "(c) Ground truth": 0.004619598388671875,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0020"
+    },
+    {
+      "sample_index": 20,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.4638671875,
+      "group_vmax": {
+        "main": 1.4638671875,
+        "error": 0.281869398849085
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.006233723958333334,
+        "(b) Model prediction": 0.004427083333333333,
+        "(c) Ground truth": 0.004296875,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0020_zoom_400_880"
+    },
+    {
+      "sample_index": 21,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9742878049612047,
+      "group_vmax": {
+        "main": 0.9742878049612047,
+        "error": 0.13778006933629514
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0057163238525390625,
+        "(b) Model prediction": 0.00450897216796875,
+        "(c) Ground truth": 0.0047760009765625,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0021"
+    },
+    {
+      "sample_index": 21,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.1856879484653469,
+      "group_vmax": {
+        "main": 1.1856879484653469,
+        "error": 0.1648657823447138
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005696614583333333,
+        "(b) Model prediction": 0.004443359375,
+        "(c) Ground truth": 0.004866536458333333,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0021_zoom_400_880"
+    },
+    {
+      "sample_index": 22,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.99365234375,
+      "group_vmax": {
+        "main": 0.99365234375,
+        "error": 0.09268475871533156
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0051021575927734375,
+        "(b) Model prediction": 0.0049076080322265625,
+        "(c) Ground truth": 0.0049896240234375,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0022"
+    },
+    {
+      "sample_index": 22,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.501203960180282,
+      "group_vmax": {
+        "main": 1.501203960180282,
+        "error": 0.1212998341023922
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.00517578125,
+        "(b) Model prediction": 0.004736328125,
+        "(c) Ground truth": 0.005094401041666667,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0022_zoom_400_880"
+    },
+    {
+      "sample_index": 23,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 1.0004821455478679,
+      "group_vmax": {
+        "main": 1.0004821455478679,
+        "error": 0.08447484582662584
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0049896240234375,
+        "(b) Model prediction": 0.0051364898681640625,
+        "(c) Ground truth": 0.00487518310546875,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0023"
+    },
+    {
+      "sample_index": 23,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.447265625,
+      "group_vmax": {
+        "main": 1.447265625,
+        "error": 0.1120725240558386
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.004899088541666667,
+        "(b) Model prediction": 0.0050618489583333336,
+        "(c) Ground truth": 0.0049479166666666664,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0023_zoom_400_880"
+    },
+    {
+      "sample_index": 24,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.851817195415504,
+      "group_vmax": {
+        "main": 0.851817195415504,
+        "error": 0.25592375904321674
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.009647369384765625,
+        "(b) Model prediction": 0.002841949462890625,
+        "(c) Ground truth": 0.0025119781494140625,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0024"
+    },
+    {
+      "sample_index": 24,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.2826220703124989,
+      "group_vmax": {
+        "main": 1.2826220703124989,
+        "error": 0.363011516854167
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.009293619791666667,
+        "(b) Model prediction": 0.003352864583333333,
+        "(c) Ground truth": 0.0023600260416666665,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0024_zoom_400_880"
+    },
+    {
+      "sample_index": 25,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.91650390625,
+      "group_vmax": {
+        "main": 0.91650390625,
+        "error": 0.21945576131343844
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0077056884765625,
+        "(b) Model prediction": 0.0035610198974609375,
+        "(c) Ground truth": 0.003696441650390625,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0025"
+    },
+    {
+      "sample_index": 25,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.328125,
+      "group_vmax": {
+        "main": 1.328125,
+        "error": 0.27952991775237024
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.006966145833333334,
+        "(b) Model prediction": 0.004036458333333334,
+        "(c) Ground truth": 0.003955078125,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0025_zoom_400_880"
+    },
+    {
+      "sample_index": 26,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9555365908145957,
+      "group_vmax": {
+        "main": 0.9555365908145957,
+        "error": 0.16585481975227595
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0059185028076171875,
+        "(b) Model prediction": 0.00449371337890625,
+        "(c) Ground truth": 0.004589080810546875,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0026"
+    },
+    {
+      "sample_index": 26,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.494140625,
+      "group_vmax": {
+        "main": 1.494140625,
+        "error": 0.2583295068144799
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.00546875,
+        "(b) Model prediction": 0.004524739583333334,
+        "(c) Ground truth": 0.004996744791666666,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0026_zoom_400_880"
+    },
+    {
+      "sample_index": 27,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.983412605226041,
+      "group_vmax": {
+        "main": 0.983412605226041,
+        "error": 0.14233993068337442
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.00540924072265625,
+        "(b) Model prediction": 0.00473785400390625,
+        "(c) Ground truth": 0.0048542022705078125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0027"
+    },
+    {
+      "sample_index": 27,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.4345950317382812,
+      "group_vmax": {
+        "main": 1.4345950317382812,
+        "error": 0.1712041176483035
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005240885416666666,
+        "(b) Model prediction": 0.004622395833333333,
+        "(c) Ground truth": 0.005143229166666667,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0027_zoom_400_880"
+    },
+    {
+      "sample_index": 28,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9921875,
+      "group_vmax": {
+        "main": 0.9921875,
+        "error": 0.09053692889399828
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0051364898681640625,
+        "(b) Model prediction": 0.004940032958984375,
+        "(c) Ground truth": 0.004913330078125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0028"
+    },
+    {
+      "sample_index": 28,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.6468000262975686,
+      "group_vmax": {
+        "main": 1.6468000262975686,
+        "error": 0.13629761636257187
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005240885416666666,
+        "(b) Model prediction": 0.004899088541666667,
+        "(c) Ground truth": 0.004866536458333333,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0028_zoom_400_880"
+    },
+    {
+      "sample_index": 29,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 1.0009765625,
+      "group_vmax": {
+        "main": 1.0009765625,
+        "error": 0.08643056388944388
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0049648284912109375,
+        "(b) Model prediction": 0.005245208740234375,
+        "(c) Ground truth": 0.004749298095703125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0029"
+    },
+    {
+      "sample_index": 29,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.427734375,
+      "group_vmax": {
+        "main": 1.427734375,
+        "error": 0.11256660431623466
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.004720052083333333,
+        "(b) Model prediction": 0.005517578125,
+        "(c) Ground truth": 0.004736328125,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0029_zoom_400_880"
+    },
+    {
+      "sample_index": 30,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.84765625,
+      "group_vmax": {
+        "main": 0.84765625,
+        "error": 0.26197686955332755
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.010219573974609375,
+        "(b) Model prediction": 0.00244903564453125,
+        "(c) Ground truth": 0.0023212432861328125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0030"
+    },
+    {
+      "sample_index": 30,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.2099609375,
+      "group_vmax": {
+        "main": 1.2099609375,
+        "error": 0.3675845682621003
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0077473958333333336,
+        "(b) Model prediction": 0.004052734375,
+        "(c) Ground truth": 0.003173828125,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0030_zoom_400_880"
+    },
+    {
+      "sample_index": 31,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.88720703125,
+      "group_vmax": {
+        "main": 0.88720703125,
+        "error": 0.23751513019204146
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.008062362670898438,
+        "(b) Model prediction": 0.0033550262451171875,
+        "(c) Ground truth": 0.003582000732421875,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0031"
+    },
+    {
+      "sample_index": 31,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.345703125,
+      "group_vmax": {
+        "main": 1.345703125,
+        "error": 0.2507699585705996
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005338541666666667,
+        "(b) Model prediction": 0.004720052083333333,
+        "(c) Ground truth": 0.004915364583333333,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0031_zoom_400_880"
+    },
+    {
+      "sample_index": 32,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9453125,
+      "group_vmax": {
+        "main": 0.9453125,
+        "error": 0.21451038107275966
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0061435699462890625,
+        "(b) Model prediction": 0.004520416259765625,
+        "(c) Ground truth": 0.0043354034423828125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0032"
+    },
+    {
+      "sample_index": 32,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.4286421358585357,
+      "group_vmax": {
+        "main": 1.4286421358585357,
+        "error": 0.5703500796854497
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.008349609375,
+        "(b) Model prediction": 0.0034993489583333335,
+        "(c) Ground truth": 0.0031575520833333334,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0032_zoom_400_880"
+    },
+    {
+      "sample_index": 33,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9775390625,
+      "group_vmax": {
+        "main": 0.9775390625,
+        "error": 0.1687139894068241
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0055561065673828125,
+        "(b) Model prediction": 0.0048160552978515625,
+        "(c) Ground truth": 0.0046100616455078125,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0033"
+    },
+    {
+      "sample_index": 33,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.4111328125,
+      "group_vmax": {
+        "main": 1.4111328125,
+        "error": 0.2001864264905453
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0055501302083333336,
+        "(b) Model prediction": 0.004899088541666667,
+        "(c) Ground truth": 0.004524739583333334,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0033_zoom_400_880"
+    },
+    {
+      "sample_index": 34,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 0.9907459977269174,
+      "group_vmax": {
+        "main": 0.9907459977269174,
+        "error": 0.11616371292620903
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0052394866943359375,
+        "(b) Model prediction": 0.004955291748046875,
+        "(c) Ground truth": 0.0048065185546875,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0034"
+    },
+    {
+      "sample_index": 34,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.4135107612609858,
+      "group_vmax": {
+        "main": 1.4135107612609858,
+        "error": 0.17288466390222312
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.00517578125,
+        "(b) Model prediction": 0.005013020833333334,
+        "(c) Ground truth": 0.0048177083333333336,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0034_zoom_400_880"
+    },
+    {
+      "sample_index": 35,
+      "view": "main",
+      "time_samples": [
+        0,
+        4096
+      ],
+      "vmax": 1.0029296875,
+      "group_vmax": {
+        "main": 1.0029296875,
+        "error": 0.07627540469169618
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.0049152374267578125,
+        "(b) Model prediction": 0.005176544189453125,
+        "(c) Ground truth": 0.0048923492431640625,
+        "(d) Error: |prediction - truth|": 0.005001068115234375
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0035"
+    },
+    {
+      "sample_index": 35,
+      "view": "zoom",
+      "time_samples": [
+        400,
+        880
+      ],
+      "vmax": 1.4462890625,
+      "group_vmax": {
+        "main": 1.4462890625,
+        "error": 0.0913210798799992
+      },
+      "display_saturation_fraction": {
+        "(a) Input": 0.005013020833333334,
+        "(b) Model prediction": 0.005078125,
+        "(c) Ground truth": 0.0048828125,
+        "(d) Error: |prediction - truth|": 0.005013020833333334
+      },
+      "stem": "/data2/user/zyq/projects/das-resshift/outputs/das_4gpu_test_gpu7/figures_with_zoom/test_0035_zoom_400_880"
+    }
+  ]
+}

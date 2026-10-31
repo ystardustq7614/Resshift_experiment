@@ -6,7 +6,6 @@ __pycache__/
 .idea/
 data/
 dataset/
-outputs/
 *.npy
 *.npz
 *.pt
