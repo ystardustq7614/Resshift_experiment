@@ -29,6 +29,14 @@ __pycache__/
 outputs/baseline/
 outputs/experiment_*/
 
+# Local results and safety copies are shared across branch checkouts.
+/outputs/
+/runs/
+/backups/
+/delete/
+/.worktrees/
+/DAS_Semisynthetic_Test/DAS_Semisynthetic_Test/outputs/
+
 # Local dataset audit and smoke-test artifacts
 /DAS_Semisynthetic_Test/DAS_Semisynthetic_Test/DATASET_AUDIT_TASK.md
 /DAS_Semisynthetic_Test/DAS_Semisynthetic_Test/scripts/audit_dataset.py

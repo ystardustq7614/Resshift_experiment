@@ -1,0 +1,2 @@
+# Install in the existing DAS training environment.
+matplotlib==3.9.4

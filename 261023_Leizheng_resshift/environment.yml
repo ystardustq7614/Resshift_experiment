@@ -1,0 +1,17 @@
+# Linux / NVIDIA configuration for the current server driver
+# PyTorch CUDA 12.4 build; compatible with the existing driver setup.
+name: das-resshift
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.10.20
+  - pip
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu124
+      - torch==2.4.1+cu124
+      - torchvision==0.19.1+cu124
+      - numpy==1.26.4
+      - timm==0.9.16
+      - einops==0.8.2
