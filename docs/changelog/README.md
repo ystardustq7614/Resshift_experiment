@@ -26,6 +26,8 @@
 
 [本次迁移记录与回滚](migration-2026-10-28.md)
 
+[2026-10-31：既有数据集绘图代码与文档纳入 dev](dataset-plot-integration-2026-10-31.md)（独立于 ResShift 修复轮次；不纳入图片、数据和训练分支）。
+
 2026-10-28用户范围调整：[Windows CPU DDP默认可选跳过](R007/windows-ddp-bypass.md)，不再作为当前代码验收门槛；真实通信仍未验证。
 
 同日后续共识：[实验正确性与GPU运行优先](R007/experiment-first-plan.md)，旧扩展测试门槛已取消；修订6两项收口及提交同步完成，任务单14记录最终状态，不重复正式GPU或扩测边界。
