@@ -6,7 +6,6 @@ __pycache__/
 .idea/
 data/
 dataset/
-*.npy
 *.npz
 *.pt
 *.pth
